@@ -1,0 +1,21 @@
+scalar Date
+
+type Query {
+}
+
+type Mutation {
+  signup(input: AuthInput): AuthPayload!
+  login(input: AuthInput): AuthPayload!
+}
+
+type User {
+  id: String
+  name: String
+  email: String
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
