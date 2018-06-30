@@ -8,7 +8,7 @@ type Query {
 
 type Mutation {
   captureEmail(email: String!): String
-  invite(team: String, emails: [String], groupes: [String], role: String): [String]
+  invite(emails: [String], groups: [String], role: String): [String]
   signup(id: String!, name: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): String

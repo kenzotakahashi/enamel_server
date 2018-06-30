@@ -30,27 +30,31 @@ const resolvers = {
         role: 'Owner',
         status: 'pending'
       })
-      await user.save()
       return user.id
     },
-    async invite (_, {team, emails, groups, role}) {
-      const teamMembers = User.find({team}, 'email').map(o => o.email)
-      const groups = groups.map(id => Group.findById(id))
+    async invite (_, {emails, groups, role}, context) {
+      const user = getUserId(context)
+      const team = (await User.findById(user)).team
+      const teamMembers = (await User.find({team}, 'email')).map(o => o.email)
       const users = []
       const existingUsers = []
       for (const email of emails) {
         if (teamMembers.includes(email)) {
           existingUsers.push(email)
         } else {
-          const user = User.create({
+          const user = await User.create({
             email,
             team,
             role,
             status: 'pending'
           })
-          user.save()
           users.push(user.id)          
         }
+      }
+      for (const id of groups) {
+        const group = await Group.findById(id)
+        group.users = users
+        await group.save()
       }
       return existingUsers
     },
@@ -68,7 +72,6 @@ const resolvers = {
         const team = await Team.create({
           name: `${name}'s Team`
         })
-        await team.save()
         user.set(Object.assign(common, {team: team.id}))
       } else {
         user.set(common)
@@ -89,11 +92,11 @@ const resolvers = {
       const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '1d' })
       return {token, user}
     },
-    async createGroup (_, {name, initials, avatarColor, users}) {
+    async createGroup (_, {name, initials, avatarColor, users}, context) {
+      const user = getUserId(context)
       const group = await Group.create({
         name, initials, avatarColor, users: users.map(o => ObjectId(o))
       })
-      await group.save()
       return group.id
     }
   },
