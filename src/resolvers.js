@@ -9,6 +9,20 @@ const { getUserId } = require('./utils')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
+async function folderCommon(context, name, shareWith) {
+  const user = getUserId(context)
+  const team = (await User.findById(user)).team
+  return {
+    name,
+    subfolders: [],
+    tasks: [],
+    shareWith: shareWith.map(o => ({
+      ...o,
+      item: ObjectId(o.kind === 'Team' ? team : o.item)
+    }))
+  }
+}
+
 const resolvers = {
   Query: {
     async folders () {
@@ -20,6 +34,32 @@ const resolvers = {
     }
   },
   Mutation: {
+    async createFolder(_, {parent, name, shareWith}, context) {
+      const folder = await Folder.create(await folderCommon(context, name, shareWith))
+      if (parent) {
+        await Folder.update(
+          { _id: ObjectId(parent) },
+          { $push: { subfolders: folder.id } }
+        )
+      }
+      return await Folder.findById(folder.id).populate('shareWith.item')
+    },
+    async createProject(_, {parent, name, owners, startDate, finishDate, shareWith}, context) {
+      const common = await folderCommon(context, name, shareWith)
+      const folder = await Project.create(Object.assign(common, {
+        owners,
+        startDate,
+        finishDate,
+        status: 'Green'
+      }))
+      if (parent) {
+        await Folder.update(
+          { _id: ObjectId(parent) },
+          { $push: { subfolders: folder.id } }
+        )
+      }
+      return await Project.findById(folder.id).populate('shareWith.item')
+    },
     async captureEmail (_, {email}) {
       const isEmailTaken = await User.findOne({email})
       if (isEmailTaken) {

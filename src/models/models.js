@@ -9,12 +9,12 @@ function buildModel(name, schema, options={}) {
 }
 
 const Folder = buildModel('Folder', {
-  subFolders: [{ type: ObjectId, ref: 'Folder' }],
-  tasks: [{ type: ObjectId, ref: 'Task' }],
   name: String,
-  sharedWith: [{
+  subfolders: [{ type: ObjectId, ref: 'Folder' }],
+  tasks: [{ type: ObjectId, ref: 'Task' }],
+  shareWith: [{
     kind: String,
-    item: { type: ObjectId, refPath: 'sharedWith.kind' }
+    item: { type: ObjectId, refPath: 'shareWith.kind' }
   }]
 })
 module.exports.Folder = Folder
@@ -29,9 +29,9 @@ module.exports.Project = Folder.discriminator('Project', new Schema({
 module.exports.Task = buildModel('Task', {
   subTasks: [{ type: ObjectId, ref: 'Task' }],
   assignees: [{ type: ObjectId, ref: 'User' }],
-  sharedWith: [{
+  shareWith: [{
     kind: String,
-    item: { type: ObjectId, refPath: 'sharedWith.kind' }
+    item: { type: ObjectId, refPath: 'shareWith.kind' }
   }],
   name: String,
   startDate: Date,

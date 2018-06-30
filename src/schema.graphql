@@ -12,6 +12,9 @@ type Mutation {
   signup(id: String!, name: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): String
+  createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
+  createProject(parent: String, name: String!, owners: [String],
+                startDate: Date, finishDate: Date, shareWith: [ShareInput]): Project
 }
 
 type User {
@@ -25,13 +28,16 @@ type User {
 
 type Folder {
   id: String
-  subFolders: [Folder]
-  tasks: [Task]
   name: String
+  tasks: [Task]
+  shareWith: [JSON]
 }
 
 type Project {
   id: String
+  name: String
+  tasks: [Task]
+  shareWith: [JSON]
   owners: [User]
   startDate: Date
   finishDate: Date
@@ -74,3 +80,9 @@ type AuthPayload {
   token: String!
   user: User!
 }
+
+input ShareInput {
+  kind: String
+  item: String
+}
+
