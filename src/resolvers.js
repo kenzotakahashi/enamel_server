@@ -4,67 +4,80 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
-const { User, Purchase } = require('./models/models')
+const { User, Folder, Project, Team, Group, Record } = require('./models/models')
 const { getUserId } = require('./utils')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
 const resolvers = {
   Query: {
-    async showPurchase (_, {id}, context) {
-      const user = getUserId(context)
-      await Purchase.findById(id)
+    async folders () {
+      return []
     },
-    async purchases (_, {input}, context, info) {
-      const user = getUserId(context)
-      return await Purchase.find({
-        user: ObjectId(user),
-        $and : [
-          {"$expr": { "$eq": [{ "$month": "$date" }, input.month] }},
-          {"$expr": { "$eq": [{ "$year": "$date" }, input.year] }}
-        ]
-      }).sort({ date: -1 })
-
+    async getGroup (_, {id}) {
+      const group = await Group.findById(group.ib).populate('users')
+      return group
+    }
   },
   Mutation: {
-    async createPurchase (_, {input}, context) {
-      const user = getUserId(context)
-      const {id, ...rest} = input
-      const params = Object.assign(rest, {user, _id: id})
-      const purchase = await Purchase.create(params)
-      await purchase.save()
-      return purchase
-    },
-    async updatePurchase (_, {input}, context) {
-      const user = getUserId(context)
-      const {id, ...rest} = input
-      const purchase = await Purchase.findById(id)
-      purchase.set(rest)
-      await purchase.save()
-      return purchase
-    },
-    async deletePurchase (_, {id}, context) {
-      const user = getUserId(context)
-      await Purchase.deleteOne({_id: id})
-      return true
-    },
-    async signup (_, {input}) {
-      const {email, password} = input
-      const u = await User.findOne({email})
-      if (u) {
+    async captureEmail (_, {email}) {
+      const isEmailTaken = await User.findOne({email})
+      if (isEmailTaken) {
         throw new Error('This email is already taken')
       }
       const user = await User.create({
         email,
-        password: await bcrypt.hash(password, 10)
+        role: 'Owner',
+        status: 'pending'
       })
       await user.save()
-
-      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '1y' })
+      return user.id
+    },
+    async invite (_, {team, emails, groups, role}) {
+      const teamMembers = User.find({team}, 'email').map(o => o.email)
+      const groups = groups.map(id => Group.findById(id))
+      const users = []
+      const existingUsers = []
+      for (const email of emails) {
+        if (teamMembers.includes(email)) {
+          existingUsers.push(email)
+        } else {
+          const user = User.create({
+            email,
+            team,
+            role,
+            status: 'pending'
+          })
+          user.save()
+          users.push(user.id)          
+        }
+      }
+      return existingUsers
+    },
+    async signup (_, {id, name, password}) {
+      const user = await User.findById(id)
+      if (user.password) {
+        throw new Error('You have already signed up')
+      }
+      const common = {
+        name,
+        password: await bcrypt.hash(password, 10),
+        status: 'Active'
+      }
+      if (user.role === 'Owner') {
+        const team = await Team.create({
+          name: `${name}'s Team`
+        })
+        await team.save()
+        user.set(Object.assign(common, {team: team.id}))
+      } else {
+        user.set(common)
+      }
+      await user.save()
+      const token = jwt.sign({id: user.id, email: user.email}, JWT_SECRET, { expiresIn: '1y' })
       return {token, user}
     },
-    async login (_, {input}) {
-      const {email, password} = input
+    async login (_, {email, password}) {
       const user = await User.findOne({email})
       if (!user) {
         throw new Error('No user with that email')
@@ -75,6 +88,13 @@ const resolvers = {
       }
       const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '1d' })
       return {token, user}
+    },
+    async createGroup (_, {name, initials, avatarColor, users}) {
+      const group = await Group.create({
+        name, initials, avatarColor, users: users.map(o => ObjectId(o))
+      })
+      await group.save()
+      return group.id
     }
   },
   Date: new GraphQLScalarType({

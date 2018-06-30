@@ -1,21 +1,76 @@
 scalar Date
+scalar JSON
 
 type Query {
+  folders: JSON
+  getGroup: Group
 }
 
 type Mutation {
-  signup(input: AuthInput): AuthPayload!
-  login(input: AuthInput): AuthPayload!
+  captureEmail(email: String!): String
+  invite(team: String, emails: [String], groupes: [String], role: String): [String]
+  signup(id: String!, name: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  createGroup(name: String, initials: String, avatarColor: String, users: [String]): String
 }
 
 type User {
   id: String
   name: String
   email: String
+  team: Team
+  role: String
+  status: String
+}
+
+type Folder {
+  id: String
+  subFolders: [Folder]
+  tasks: [Task]
+  name: String
+}
+
+type Project {
+  id: String
+  owners: [User]
+  startDate: Date
+  finishDate: Date
+  status: String
+}
+
+type Task {
+  id: String
+  subTasks: [Task]
+  assignees: [User]
+  name: String
+  startDate: Date
+  finishDate: Date
+  importance: String
+  status: String
+}
+
+type Team {
+  id: String
+  name: String
+}
+
+type Group {
+  id: String
+  name: String
+  initials: String
+  avatarColor: String
+  users: [User]
+}
+
+type Record {
+  id: String
+  user: [User]
+  task: [Task]
+  date: Date
+  timeSpent: Float
 }
 
 type AuthPayload {
   token: String!
   user: User!
 }
-

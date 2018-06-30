@@ -2,26 +2,37 @@ const mongoose = require("mongoose")
 const timeZone = require('mongoose-timezone')
 const moment = require('moment')
 const Schema = mongoose.Schema
+const ObjectId = Schema.Types.ObjectId
 
 function buildModel(name, schema, options={}) {
   return mongoose.model(name, new Schema(schema, Object.assign({timestamps: true}, options)))
 }
 
-module.exports.Folder = buildModel('Folder', {
-  subFolders: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
-  tasks: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
-  name: String
+const Folder = buildModel('Folder', {
+  subFolders: [{ type: ObjectId, ref: 'Folder' }],
+  tasks: [{ type: ObjectId, ref: 'Task' }],
+  name: String,
+  sharedWith: [{
+    kind: String,
+    item: { type: ObjectId, refPath: 'sharedWith.kind' }
+  }]
 })
+module.exports.Folder = Folder
 
 module.exports.Project = Folder.discriminator('Project', new Schema({
-  owners: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  owners: [{ type: ObjectId, ref: 'User' }],
   startDate: Date,
   finishDate: Date,
   status: String
 }, {timestamps: true}))
 
 module.exports.Task = buildModel('Task', {
-  subTasks: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
+  subTasks: [{ type: ObjectId, ref: 'Task' }],
+  assignees: [{ type: ObjectId, ref: 'User' }],
+  sharedWith: [{
+    kind: String,
+    item: { type: ObjectId, refPath: 'sharedWith.kind' }
+  }],
   name: String,
   startDate: Date,
   finishDate: Date,
@@ -35,12 +46,16 @@ module.exports.Team = buildModel('Team', {
 
 module.exports.Group = buildModel('Group', {
   name: String,
-  folders: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
+  initials: String,
+  avatarColor: String,
+  users: [{ type: ObjectId, ref: 'User' }],
+  // sharedFolders: [{ type: ObjectId, ref: 'Folder' }],
+  // sharedTasks: [{ type: ObjectId, ref: 'Task' }],
 })
 
 module.exports.Record = buildModel('Record', {
-  user: { type: Schema.Types.ObjectId, ref: 'User' },
-  task: { type: Schema.Types.ObjectId, ref: 'Task' },
+  user: { type: ObjectId, ref: 'User' },
+  task: { type: ObjectId, ref: 'Task' },
   date: Date,
   timeSpent: Number
 })
@@ -53,16 +68,13 @@ module.exports.User = buildModel('User', {
   email: {
     type: String,
     required: true,
-    unique: true
   },
   password: {
     type: String,
-    required: true
   },
-  folders: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
-  tasks: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
-  groups: [{ type: Schema.Types.ObjectId, ref: 'Group' }],
-  team: { type: Schema.Types.ObjectId, ref: 'Team' },
+  // sharedFolders: [{ type: ObjectId, ref: 'Folder' }],
+  // sharedTasks: [{ type: ObjectId, ref: 'Task' }],
+  team: { type: ObjectId, ref: 'Team' },
   role: String,
   status: String
 })
