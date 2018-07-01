@@ -23,15 +23,37 @@ async function folderCommon(context, name, shareWith) {
   }
 }
 
+async function recursiveQuery(id_) {
+  const tree = await Folder.findById(id_, 'name tasks subfolders shareWith').populate('subfolders')
+  const promises = tree.subfolders.map(id => recursiveQuery(id))
+  const subfolders = await Promise.all(promises)
+  const { id, name, tasks, shareWith } = tree
+  return {
+    id,
+    name,
+    tasks,
+    shareWith,
+    subfolders
+  }
+}
+
 const resolvers = {
   Query: {
-    async folders () {
-      return []
-    },
     async getGroup (_, {id}) {
       const group = await Group.findById(group.ib).populate('users')
       return group
-    }
+    },
+    async folderTree (_, args, context) {
+      const userId = getUserId(context)
+      const user = await User.findById(userId)
+      const groups = await Group.find({users: ObjectId(userId)}, '_id')
+      // Group, and Team that the use belongs to + user id
+      const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
+      const seedPromises = ids.map(id => Folder.find({'shareWith.item': id}))
+      const seeds = (await Promise.all(seedPromises)).reduce((a, b) => a.concat(b))
+      const treePromises = seeds.map(o => recursiveQuery(o.id))
+      return await Promise.all(treePromises)
+    },
   },
   Mutation: {
     async createFolder(_, {parent, name, shareWith}, context) {
@@ -42,7 +64,11 @@ const resolvers = {
           { $push: { subfolders: folder.id } }
         )
       }
-      return await Folder.findById(folder.id).populate('shareWith.item')
+      // Right now populating is unnecessary
+      return await Folder.findById(folder.id).populate({
+        path: 'shareWith.item',
+        select: '_id'
+      })
     },
     async createProject(_, {parent, name, owners, startDate, finishDate, shareWith}, context) {
       const common = await folderCommon(context, name, shareWith)
@@ -70,7 +96,7 @@ const resolvers = {
         role: 'Owner',
         status: 'pending'
       })
-      return user.id
+      return user
     },
     async invite (_, {emails, groups, role}, context) {
       const user = getUserId(context)
@@ -101,7 +127,7 @@ const resolvers = {
     async signup (_, {id, name, password}) {
       const user = await User.findById(id)
       if (user.password) {
-        throw new Error('You have already signed up')
+        // throw new Error('You have already signed up')
       }
       const common = {
         name,

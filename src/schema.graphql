@@ -2,12 +2,12 @@ scalar Date
 scalar JSON
 
 type Query {
-  folders: JSON
   getGroup: Group
+  folderTree: [JSON]
 }
 
 type Mutation {
-  captureEmail(email: String!): String
+  captureEmail(email: String!): User
   invite(emails: [String], groups: [String], role: String): [String]
   signup(id: String!, name: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
