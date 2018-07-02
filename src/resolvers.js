@@ -28,21 +28,13 @@ async function recursiveQuery(id_) {
   const promises = tree.subfolders.map(o => recursiveQuery(o.id))
   const subfolders = await Promise.all(promises)
   const { id, name, tasks, shareWith } = tree
-  return {
-    id,
-    name,
-    tasks,
-    shareWith,
-    subfolders
-  }
+  return { id, name, tasks, shareWith, subfolders }
 }
 
 async function recursiveQueryTask(id_) {
   const tree = await Task.findById(id_).populate('subtasks')
   const promises = tree.subtasks.map(o => recursiveQueryTask(o.id))
   const subtasks = await Promise.all(promises)
-  // tree.subtasks = subtasks
-  // return tree
   const { id, assignees, description, importance, status, name, creator,
           shareWith, createdAt, updatedAt } = tree
   return { id, assignees, description, importance, status, name, creator,
@@ -69,11 +61,11 @@ const resolvers = {
     async getFolder (_, args, context) {
       const userId = getUserId(context)
       const folder = await Folder.findById(args.id).populate('shareWith')
-      const treePromises = folder.tasks.map(o => recursiveQueryTask(o))
+      const tasks_ = await Task.find({folder: folder._id})
+      const treePromises = tasks_.map(o => recursiveQueryTask(o))
       const tasks = await Promise.all(treePromises)
       const { id, name, shareWith } = folder
       const res = {id, name, shareWith, tasks}
-      console.log(res)
       return res
     }
   },
@@ -82,12 +74,9 @@ const resolvers = {
       const userId = getUserId(context)
       const task = await Task.create({
         name,
+        folder,
         creator: userId
       })
-      await Folder.update(
-        { _id: ObjectId(folder) },
-        { $push: { tasks: task.id } }        
-      )
       if (parent) {
         await Task.update(
           { _id: ObjectId(parent) },

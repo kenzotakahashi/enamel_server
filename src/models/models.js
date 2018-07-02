@@ -16,7 +16,7 @@ const Folder = buildModel('Folder', {
     item: { type: ObjectId, refPath: 'shareWith.kind' }
   }],
   subfolders: [{ type: ObjectId, ref: 'Folder' }],
-  tasks: [{ type: ObjectId, ref: 'Task' }]
+  // tasks: [{ type: ObjectId, ref: 'Task' }]
 })
 module.exports.Folder = Folder
 
@@ -28,6 +28,7 @@ module.exports.Project = Folder.discriminator('Project', new Schema({
 }, {timestamps: true}))
 
 module.exports.Task = buildModel('Task', {
+  folder: String,
   subtasks: [{ type: ObjectId, ref: 'Task' }],
   assignees: [{ type: ObjectId, ref: 'User' }],
   shareWith: [{
