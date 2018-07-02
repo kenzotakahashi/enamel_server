@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
-const { User, Folder, Project, Team, Group, Record } = require('./models/models')
+const { User, Folder, Project, Team, Group, Record, Task } = require('./models/models')
 const { getUserId } = require('./utils')
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -25,7 +25,7 @@ async function folderCommon(context, name, shareWith) {
 
 async function recursiveQuery(id_) {
   const tree = await Folder.findById(id_, 'name tasks subfolders shareWith').populate('subfolders')
-  const promises = tree.subfolders.map(id => recursiveQuery(id))
+  const promises = tree.subfolders.map(o => recursiveQuery(o.id))
   const subfolders = await Promise.all(promises)
   const { id, name, tasks, shareWith } = tree
   return {
@@ -35,6 +35,18 @@ async function recursiveQuery(id_) {
     shareWith,
     subfolders
   }
+}
+
+async function recursiveQueryTask(id_) {
+  const tree = await Task.findById(id_).populate('subtasks')
+  const promises = tree.subtasks.map(o => recursiveQueryTask(o.id))
+  const subtasks = await Promise.all(promises)
+  // tree.subtasks = subtasks
+  // return tree
+  const { id, assignees, description, importance, status, name, creator,
+          shareWith, createdAt, updatedAt } = tree
+  return { id, assignees, description, importance, status, name, creator,
+           shareWith, createdAt, updatedAt, subtasks }
 }
 
 const resolvers = {
@@ -54,8 +66,36 @@ const resolvers = {
       const treePromises = seeds.map(o => recursiveQuery(o.id))
       return await Promise.all(treePromises)
     },
+    async getFolder (_, args, context) {
+      const userId = getUserId(context)
+      const folder = await Folder.findById(args.id).populate('shareWith')
+      const treePromises = folder.tasks.map(o => recursiveQueryTask(o))
+      const tasks = await Promise.all(treePromises)
+      const { id, name, shareWith } = folder
+      const res = {id, name, shareWith, tasks}
+      console.log(res)
+      return res
+    }
   },
   Mutation: {
+    async createTask(_, {folder, parent, name}, context) {
+      const userId = getUserId(context)
+      const task = await Task.create({
+        name,
+        creator: userId
+      })
+      await Folder.update(
+        { _id: ObjectId(folder) },
+        { $push: { tasks: task.id } }        
+      )
+      if (parent) {
+        await Task.update(
+          { _id: ObjectId(parent) },
+          { $push: { subtasks: task.id } }
+        )
+      }
+      return task
+    },
     async createFolder(_, {parent, name, shareWith}, context) {
       const folder = await Folder.create(await folderCommon(context, name, shareWith))
       if (parent) {
@@ -155,7 +195,7 @@ const resolvers = {
       if (!valid) {
         throw new Error('Incorrect password')
       }
-      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '1d' })
+      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '7d' })
       return {token, user}
     },
     async createGroup (_, {name, initials, avatarColor, users}, context) {

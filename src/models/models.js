@@ -10,12 +10,13 @@ function buildModel(name, schema, options={}) {
 
 const Folder = buildModel('Folder', {
   name: String,
-  subfolders: [{ type: ObjectId, ref: 'Folder' }],
-  tasks: [{ type: ObjectId, ref: 'Task' }],
+  description: String,
   shareWith: [{
     kind: String,
     item: { type: ObjectId, refPath: 'shareWith.kind' }
-  }]
+  }],
+  subfolders: [{ type: ObjectId, ref: 'Folder' }],
+  tasks: [{ type: ObjectId, ref: 'Task' }]
 })
 module.exports.Folder = Folder
 
@@ -27,17 +28,42 @@ module.exports.Project = Folder.discriminator('Project', new Schema({
 }, {timestamps: true}))
 
 module.exports.Task = buildModel('Task', {
-  subTasks: [{ type: ObjectId, ref: 'Task' }],
+  subtasks: [{ type: ObjectId, ref: 'Task' }],
   assignees: [{ type: ObjectId, ref: 'User' }],
   shareWith: [{
     kind: String,
     item: { type: ObjectId, refPath: 'shareWith.kind' }
   }],
   name: String,
-  startDate: Date,
-  finishDate: Date,
-  importance: String,
-  status: String,
+  description: {
+    type: String,
+    default: ''
+  },
+  creator: { type: ObjectId, ref: 'User' },
+  startDate: {
+    type: Date,
+  },
+  finishDate: {
+    type: Date,
+  },
+  importance: {
+    type: String,
+    default: 'Normal'
+  },
+  status: {
+    type: String,
+    default: 'New'
+  },
+})
+
+module.exports.Comment = buildModel('Comment', {
+  body: String,
+  parent: {
+    kind: String,
+    item: { type: ObjectId, refPath: 'parent.kind' }
+  },
+  task: { type: ObjectId, ref: 'Task' },
+  user: { type: ObjectId, ref: 'User' }
 })
 
 module.exports.Team = buildModel('Team', {
@@ -49,8 +75,6 @@ module.exports.Group = buildModel('Group', {
   initials: String,
   avatarColor: String,
   users: [{ type: ObjectId, ref: 'User' }],
-  // sharedFolders: [{ type: ObjectId, ref: 'Folder' }],
-  // sharedTasks: [{ type: ObjectId, ref: 'Task' }],
 })
 
 module.exports.Record = buildModel('Record', {
@@ -72,8 +96,6 @@ module.exports.User = buildModel('User', {
   password: {
     type: String,
   },
-  // sharedFolders: [{ type: ObjectId, ref: 'Folder' }],
-  // sharedTasks: [{ type: ObjectId, ref: 'Task' }],
   team: { type: ObjectId, ref: 'Team' },
   role: String,
   status: String
