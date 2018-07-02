@@ -97,6 +97,8 @@ module.exports.User = buildModel('User', {
   password: {
     type: String,
   },
+  avatarColor: String,
+  initials: String,
   team: { type: ObjectId, ref: 'Team' },
   role: String,
   status: String

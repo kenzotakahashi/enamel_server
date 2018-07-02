@@ -32,7 +32,10 @@ async function recursiveQuery(id_) {
 }
 
 async function recursiveQueryTask(id_) {
-  const tree = await Task.findById(id_).populate('subtasks')
+  const tree = await Task.findById(id_)
+    .populate('subtasks')
+    .populate('assignees', 'name email')
+    .populate('creator', 'name email')
   const promises = tree.subtasks.map(o => recursiveQueryTask(o.id))
   const subtasks = await Promise.all(promises)
   const { id, assignees, description, importance, status, name, creator,
@@ -67,6 +70,13 @@ const resolvers = {
       const { id, name, shareWith } = folder
       const res = {id, name, shareWith, tasks}
       return res
+    },
+    async getTask (_, {id}, context) {
+      const userId = getUserId(context)
+      // const task = await Task.findById(args.id)
+      const task = await recursiveQueryTask(id)
+      console.log(task)
+      return task
     }
   },
   Mutation: {

@@ -5,6 +5,7 @@ type Query {
   getGroup: Group
   folderTree: [JSON]
   getFolder(id: String!): Folder
+  getTask(id: String!): Task
 }
 
 type Mutation {
@@ -51,7 +52,7 @@ type Task {
   subtasks: [JSON]
   assignees: [User]
   name: String
-  creator: String
+  creator: User
   startDate: Date
   finishDate: Date
   importance: String
