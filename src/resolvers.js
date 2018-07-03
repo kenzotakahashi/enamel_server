@@ -4,16 +4,17 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
-const { User, Folder, Project, Team, Group, Record, Task } = require('./models/models')
+const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models/models')
 const { getUserId } = require('./utils')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
-async function folderCommon(context, name, shareWith) {
+async function folderCommon(context, parent, name, shareWith) {
   const user = getUserId(context)
   const team = (await User.findById(user)).team
   return {
     name,
+    parent,
     subfolders: [],
     tasks: [],
     shareWith: shareWith.map(o => ({
@@ -31,17 +32,41 @@ async function recursiveQuery(id_) {
   return { id, name, tasks, shareWith, subfolders }
 }
 
-async function recursiveQueryTask(id_) {
+async function recursiveQueryTask(id_, folders_=null) {
   const tree = await Task.findById(id_)
+    .populate('folders', 'name')
+    .populate('parent', 'name')
     .populate('subtasks')
     .populate('assignees', 'name email')
     .populate('creator', 'name email')
-  const promises = tree.subtasks.map(o => recursiveQueryTask(o.id))
+    .populate('shareWith')
+  if (!tree) return
+
+  let mergedFolders = []
+  if (folders_) {
+    mergedFolders = folders_.concat(tree.folders)
+    // const ids = [...(new Set(mergedFolders.map(o => o.id)))]
+    // mergedFolders = ids.map(id => mergedFolders.find(p => p.id === id))
+  } else {
+    mergedFolders = tree.folders
+    let parent_ = tree.parent ? tree.parent.id : null
+    while (!!parent_) {
+      const task = await Task.findById(parent_).populate('folders', 'name')
+      mergedFolders = mergedFolders.concat(task.folders)
+      parent_ = task.parent
+    }
+  }
+  mergedFolders = mergedFolders.map(o => {
+    const {id, name} = o
+    return {id, name}
+  })
+
+  const promises = tree.subtasks.map(o => recursiveQueryTask(o.id, mergedFolders))
   const subtasks = await Promise.all(promises)
-  const { id, assignees, description, importance, status, name, creator,
+  const { id, parent, assignees, description, importance, status, name, creator,
           shareWith, createdAt, updatedAt } = tree
-  return { id, assignees, description, importance, status, name, creator,
-           shareWith, createdAt, updatedAt, subtasks }
+  return { id, parent, assignees, description, importance, status, name, creator,
+           shareWith, createdAt, updatedAt, subtasks, folders: mergedFolders }
 }
 
 const resolvers = {
@@ -64,7 +89,7 @@ const resolvers = {
     async getFolder (_, args, context) {
       const userId = getUserId(context)
       const folder = await Folder.findById(args.id).populate('shareWith')
-      const tasks_ = await Task.find({folder: folder._id})
+      const tasks_ = await Task.find({folders: folder._id})
       const treePromises = tasks_.map(o => recursiveQueryTask(o))
       const tasks = await Promise.all(treePromises)
       const { id, name, shareWith } = folder
@@ -73,18 +98,31 @@ const resolvers = {
     },
     async getTask (_, {id}, context) {
       const userId = getUserId(context)
-      // const task = await Task.findById(args.id)
       const task = await recursiveQueryTask(id)
-      console.log(task)
-      return task
+      if (!task) {
+        throw new Error('Task with that id does not exist')
+      }
+      comments = await Comment.find({'parent.item': ObjectId(task.id)})
+                              .populate('user', 'id name initials avatarColor')
+      return {...task, comments}
     }
   },
   Mutation: {
+    async createComment(_, {body, parent}, context) {
+      const userId = getUserId(context)
+      const comment = await Comment.create({
+        body,
+        user: userId,
+        parent,
+      })
+      return await Comment.findById(comment.id).populate('user', 'id name initials avatarColor')
+    },
     async createTask(_, {folder, parent, name}, context) {
       const userId = getUserId(context)
       const task = await Task.create({
         name,
-        folder,
+        parent,
+        folder: folder ? [folder] : [],
         creator: userId
       })
       if (parent) {
@@ -96,7 +134,7 @@ const resolvers = {
       return task
     },
     async createFolder(_, {parent, name, shareWith}, context) {
-      const folder = await Folder.create(await folderCommon(context, name, shareWith))
+      const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
       if (parent) {
         await Folder.update(
           { _id: ObjectId(parent) },
@@ -110,7 +148,7 @@ const resolvers = {
       })
     },
     async createProject(_, {parent, name, owners, startDate, finishDate, shareWith}, context) {
-      const common = await folderCommon(context, name, shareWith)
+      const common = await folderCommon(context, parent, name, shareWith)
       const folder = await Project.create(Object.assign(common, {
         owners,
         startDate,

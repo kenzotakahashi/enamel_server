@@ -15,8 +15,8 @@ const Folder = buildModel('Folder', {
     kind: String,
     item: { type: ObjectId, refPath: 'shareWith.kind' }
   }],
+  parent: { type: ObjectId, ref: 'Folder' },
   subfolders: [{ type: ObjectId, ref: 'Folder' }],
-  // tasks: [{ type: ObjectId, ref: 'Task' }]
 })
 module.exports.Folder = Folder
 
@@ -28,7 +28,8 @@ module.exports.Project = Folder.discriminator('Project', new Schema({
 }, {timestamps: true}))
 
 module.exports.Task = buildModel('Task', {
-  folder: String,
+  folders: [{ type: ObjectId, ref: 'Folder' }],
+  parent: { type: ObjectId, ref: 'Task' },
   subtasks: [{ type: ObjectId, ref: 'Task' }],
   assignees: [{ type: ObjectId, ref: 'User' }],
   shareWith: [{
@@ -57,13 +58,19 @@ module.exports.Task = buildModel('Task', {
   },
 })
 
+// TODO files
 module.exports.Comment = buildModel('Comment', {
   body: String,
+  user: { type: ObjectId, ref: 'User' },
   parent: {
     kind: String,
     item: { type: ObjectId, refPath: 'parent.kind' }
-  },
-  task: { type: ObjectId, ref: 'Task' },
+  }
+})
+
+module.exports.Reaction = buildModel('Reaction', {
+  emoji: String,
+  comment: { type: ObjectId, ref: 'Comment' },
   user: { type: ObjectId, ref: 'User' }
 })
 

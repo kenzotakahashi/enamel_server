@@ -18,12 +18,15 @@ type Mutation {
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Project
   createTask(folder: String, parent: String, name: String!): Task
+  createComment(body: String, parent: ShareInput): Comment
 }
 
 type User {
   id: String
   name: String
   email: String
+  initials: String
+  avatarColor: String
   team: Team
   role: String
   status: String
@@ -49,14 +52,27 @@ type Project {
 
 type Task {
   id: String
+  folders: [Folder]
   subtasks: [JSON]
   assignees: [User]
+  shareWith: [JSON]
   name: String
+  comments: [Comment]
+  parent: User
   creator: User
   startDate: Date
   finishDate: Date
   importance: String
   status: String
+}
+
+type Comment {
+  id: String
+  body: String
+  kind: String
+  user: User
+  parent: JSON
+  createdAt: Date
 }
 
 type Team {
