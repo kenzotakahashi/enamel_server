@@ -18,6 +18,8 @@ type Mutation {
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Project
   createTask(folder: String, parent: String, name: String!): Task
+  updateTask(id: String!, name: String): Task
+  deleteTask(id: String!, parent: String): Boolean
   createComment(body: String, parent: ShareInput): Comment
 }
 

@@ -87,9 +87,10 @@ const resolvers = {
       return await Promise.all(treePromises)
     },
     async getFolder (_, args, context) {
+      console.log(0)
       const userId = getUserId(context)
       const folder = await Folder.findById(args.id).populate('shareWith')
-      const tasks_ = await Task.find({folders: folder._id})
+      const tasks_ = await Task.find({folders: folder._id}).sort({createdAt: -1})
       const treePromises = tasks_.map(o => recursiveQueryTask(o))
       const tasks = await Promise.all(treePromises)
       const { id, name, shareWith } = folder
@@ -122,21 +123,39 @@ const resolvers = {
       const task = await Task.create({
         name,
         parent,
-        folder: folder ? [folder] : [],
+        folders: folder ? [folder] : [],
         creator: userId
       })
       if (parent) {
-        await Task.update(
+        await Task.updateOne(
           { _id: ObjectId(parent) },
           { $push: { subtasks: task.id } }
         )
       }
       return task
     },
+    async updateTask(_, {id, name}, context) {
+      const userId = getUserId(context)
+      const task = await Task.findById(id)
+      task.set({name})
+      await task.save()
+      return task
+    },
+    async deleteTask(_, {id, parent}, context) {
+      const userId = getUserId(context)
+      if (parent) {
+        await Task.updateOne(
+          { _id: ObjectId(parent) },
+          { $pull: { subtasks: id } }
+        )
+      }
+      await Task.deleteOne({_id: id})
+      return true
+    },
     async createFolder(_, {parent, name, shareWith}, context) {
       const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
       if (parent) {
-        await Folder.update(
+        await Folder.updateOne(
           { _id: ObjectId(parent) },
           { $push: { subfolders: folder.id } }
         )
@@ -156,7 +175,7 @@ const resolvers = {
         status: 'Green'
       }))
       if (parent) {
-        await Folder.update(
+        await Folder.updateOne(
           { _id: ObjectId(parent) },
           { $push: { subfolders: folder.id } }
         )
