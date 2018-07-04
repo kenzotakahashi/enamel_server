@@ -62,7 +62,7 @@ async function recursiveQueryTask(id_, folders_=null) {
   })
 
   const promises = tree.subtasks.map(o => recursiveQueryTask(o.id, mergedFolders))
-  const subtasks = await Promise.all(promises)
+  const subtasks = (await Promise.all(promises)).sort((a, b) => a.createdAt - b.createdAt)
   const { id, parent, assignees, description, importance, status, name, creator,
           shareWith, createdAt, updatedAt } = tree
   return { id, parent, assignees, description, importance, status, name, creator,
@@ -87,7 +87,6 @@ const resolvers = {
       return await Promise.all(treePromises)
     },
     async getFolder (_, args, context) {
-      console.log(0)
       const userId = getUserId(context)
       const folder = await Folder.findById(args.id).populate('shareWith')
       const tasks_ = await Task.find({folders: folder._id}).sort({createdAt: -1})
