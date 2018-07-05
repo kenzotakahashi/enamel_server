@@ -4,9 +4,9 @@ scalar JSON
 type Query {
   getGroup: Group
   getFolders(ids: [String]): [Folder]
-  folderTree: [JSON]
   getFolder(id: String!): Folder
-  getTask(id: String!): Task
+  getTasks(ids: [String]): [TopTask]
+  getTask(id: String!): TopTask
 }
 
 type Mutation {
@@ -55,10 +55,26 @@ type Project {
   status: String
 }
 
+type TopTask {
+  id: String
+  folders: [Folder]
+  subtasks: [Task]
+  assignees: [User]
+  shareWith: [JSON]
+  name: String
+  comments: [Comment]
+  parent: User
+  creator: User
+  startDate: Date
+  finishDate: Date
+  importance: String
+  status: String
+}
+
 type Task {
   id: String
   folders: [Folder]
-  subtasks: [JSON]
+  subtasks: [String]
   assignees: [User]
   shareWith: [JSON]
   name: String

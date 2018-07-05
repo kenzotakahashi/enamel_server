@@ -69,6 +69,16 @@ async function recursiveQueryTask(id_, folders_=null) {
            shareWith, createdAt, updatedAt, subtasks, folders: mergedFolders }
 }
 
+function populateTask(promise) {
+  return promise
+    .populate('folders', 'name')
+    .populate('parent', 'name')
+    .populate('assignees', 'name email')
+    .populate('creator', 'name email')
+    .populate('shareWith')
+    .populate('subtasks')
+}
+
 const resolvers = {
   Query: {
     async getGroup (_, {id}) {
@@ -77,48 +87,40 @@ const resolvers = {
     },
     async getFolders (_, {ids}, context) {
       const userId = getUserId(context)
+      let folders
       if (ids) {
-        // return await Folder.find({ _id: { $in: ids.map(o => ObjectId(o)) } })
-        return await Folder.find({ _id: { $in: ids } })
+        folders = await Folder.find({ _id: ids })
       } else {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')
         const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
-        return await Folder.find({ 'shareWith.item': { $in: ids } })
+        folders = await Folder.find({ 'shareWith.item': ids })
       }
-    },
-
-
-    async folderTree (_, args, context) {
-      const userId = getUserId(context)
-      const user = await User.findById(userId)
-      const groups = await Group.find({users: ObjectId(userId)}, '_id')
-      // Group, and Team that the use belongs to + user id
-      const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
-      const seedPromises = ids.map(id => Folder.find({'shareWith.item': id}))
-      const seeds = (await Promise.all(seedPromises)).reduce((a, b) => a.concat(b))
-      const treePromises = seeds.map(o => recursiveQuery(o.id))
-      return await Promise.all(treePromises)
+      return folders
     },
     async getFolder (_, args, context) {
       const userId = getUserId(context)
       const folder = await Folder.findById(args.id).populate('shareWith')
-      const tasks_ = await Task.find({folders: folder._id}).sort({createdAt: -1})
-      const treePromises = tasks_.map(o => recursiveQueryTask(o))
-      const tasks = await Promise.all(treePromises)
-      const { id, name, shareWith } = folder
-      const res = {id, name, shareWith, tasks}
-      return res
+      const tasks = await Task.find({folders: folder._id}).sort({createdAt: -1})
+      const { id, name, subfolders, shareWith } = folder
+      return {id, name, subfolders, shareWith, tasks}
     },
-    async getTask (_, {id}, context) {
+    async getTasks (_, {ids}, context) {
+      const tasks = await populateTask(Task.find({ _id: ids }))
+      return tasks
+    },
+    async getTask (_, args, context) {
       const userId = getUserId(context)
-      const task = await recursiveQueryTask(id)
+      const task = await populateTask(Task.findById(args.id))
       if (!task) {
         throw new Error('Task with that id does not exist')
       }
       comments = await Comment.find({'parent.item': ObjectId(task.id)})
                               .populate('user', 'id name initials avatarColor')
-      return {...task, comments}
+      const {id, name, parent, folders, assignees, creator, shareWith,
+             startDate, finishDate, importance, status, subtasks} = task
+      return {id, name, parent, folders, assignees, creator, shareWith,
+             startDate, finishDate, importance, status, subtasks, comments}
     }
   },
   Mutation: {
