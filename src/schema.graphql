@@ -7,6 +7,7 @@ type Query {
   getFolder(id: String!): Folder
   getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
+  getComments(parent: String): [Comment]
 }
 
 type Mutation {
@@ -62,7 +63,6 @@ type Task {
   assignees: [User]
   shareWith: [JSON]
   name: String
-  comments: [Comment]
   parent: User
   creator: User
   startDate: Date

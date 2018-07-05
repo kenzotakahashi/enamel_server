@@ -57,8 +57,6 @@ const resolvers = {
       return await Folder.findById(args.id).populate('shareWith')
     },
     async getTasks (_, {parent, folder}, context) {
-      // const query = folder ? { folders: folder } : { parent }
-      // return await populateTask(Task.find(query)).sort({ createdAt: -1 })
       if (parent) {
         return await populateTask(Task.find({ parent })).sort({ createdAt: 1 })
       } else {
@@ -71,12 +69,11 @@ const resolvers = {
       if (!task) {
         throw new Error('Task with that id does not exist')
       }
-      comments = await Comment.find({'parent.item': ObjectId(task.id)})
-                              .populate('user', 'id name initials avatarColor')
-      const {id, name, parent, folders, assignees, creator, shareWith,
-             startDate, finishDate, importance, status } = task
-      return {id, name, parent, folders, assignees, creator, shareWith,
-             startDate, finishDate, importance, status , comments}
+      return task
+    },
+    async getComments (_, {parent}, context) {
+      return await Comment.find({'parent.item': ObjectId(parent)})
+                          .populate('user', 'name initials avatarColor')      
     }
   },
   Mutation: {
@@ -87,7 +84,7 @@ const resolvers = {
         user: userId,
         parent,
       })
-      return await Comment.findById(comment.id).populate('user', 'id name initials avatarColor')
+      return await Comment.findById(comment.id).populate('user', 'name initials avatarColor')
     },
     async createTask(_, {folder, parent, name}, context) {
       const userId = getUserId(context)
@@ -97,7 +94,7 @@ const resolvers = {
         folders: folder ? [folder] : [],
         creator: userId
       })
-      return await populateTask(task)
+      return await populateTask(Task.findById(task.id))
     },
     async updateTask(_, {id, name}, context) {
       const userId = getUserId(context)
@@ -227,7 +224,7 @@ const resolvers = {
     parseValue: (value) => moment(value).toDate(), // value from the client
     serialize: (value) => value.getTime(), // value sent to the client
     parseLiteral: (ast) => ast
-  }),
+  })
 }
 
 module.exports = resolvers
