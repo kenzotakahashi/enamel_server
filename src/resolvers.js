@@ -24,51 +24,6 @@ async function folderCommon(context, parent, name, shareWith) {
   }
 }
 
-async function recursiveQuery(id_) {
-  const tree = await Folder.findById(id_, 'name tasks subfolders shareWith').populate('subfolders')
-  const promises = tree.subfolders.map(o => recursiveQuery(o.id))
-  const subfolders = await Promise.all(promises)
-  const { id, name, tasks, shareWith } = tree
-  return { id, name, tasks, shareWith, subfolders }
-}
-
-async function recursiveQueryTask(id_, folders_=null) {
-  const tree = await Task.findById(id_)
-    .populate('folders', 'name')
-    .populate('parent', 'name')
-    .populate('subtasks')
-    .populate('assignees', 'name email')
-    .populate('creator', 'name email')
-    .populate('shareWith')
-  if (!tree) return
-
-  let mergedFolders = []
-  if (folders_) {
-    mergedFolders = folders_.concat(tree.folders)
-    // const ids = [...(new Set(mergedFolders.map(o => o.id)))]
-    // mergedFolders = ids.map(id => mergedFolders.find(p => p.id === id))
-  } else {
-    mergedFolders = tree.folders
-    let parent_ = tree.parent ? tree.parent.id : null
-    while (!!parent_) {
-      const task = await Task.findById(parent_).populate('folders', 'name')
-      mergedFolders = mergedFolders.concat(task.folders)
-      parent_ = task.parent
-    }
-  }
-  mergedFolders = mergedFolders.map(o => {
-    const {id, name} = o
-    return {id, name}
-  })
-
-  const promises = tree.subtasks.map(o => recursiveQueryTask(o.id, mergedFolders))
-  const subtasks = (await Promise.all(promises)).sort((a, b) => a.createdAt - b.createdAt)
-  const { id, parent, assignees, description, importance, status, name, creator,
-          shareWith, createdAt, updatedAt } = tree
-  return { id, parent, assignees, description, importance, status, name, creator,
-           shareWith, createdAt, updatedAt, subtasks, folders: mergedFolders }
-}
-
 function populateTask(promise) {
   return promise
     .populate('folders', 'name')
@@ -76,7 +31,6 @@ function populateTask(promise) {
     .populate('assignees', 'name email')
     .populate('creator', 'name email')
     .populate('shareWith')
-    .populate('subtasks')
 }
 
 const resolvers = {
@@ -100,14 +54,14 @@ const resolvers = {
     },
     async getFolder (_, args, context) {
       const userId = getUserId(context)
-      const folder = await Folder.findById(args.id).populate('shareWith')
-      const tasks = await Task.find({folders: folder._id}).sort({createdAt: -1})
-      const { id, name, subfolders, shareWith } = folder
-      return {id, name, subfolders, shareWith, tasks}
+      return await Folder.findById(args.id).populate('shareWith')
     },
-    async getTasks (_, {ids}, context) {
-      const tasks = await populateTask(Task.find({ _id: ids }))
-      return tasks
+    async getTasks (_, {ids, folder}, context) {
+      if (folder) {
+        return await populateTask(Task.find({ folders: folder }))
+      } else {
+        return await populateTask(Task.find({ _id: ids }))
+      }
     },
     async getTask (_, args, context) {
       const userId = getUserId(context)

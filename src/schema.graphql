@@ -5,8 +5,8 @@ type Query {
   getGroup: Group
   getFolders(ids: [String]): [Folder]
   getFolder(id: String!): Folder
-  getTasks(ids: [String]): [TopTask]
-  getTask(id: String!): TopTask
+  getTasks(ids: [String], folder: String): [Task]
+  getTask(id: String!): Task
 }
 
 type Mutation {
@@ -40,7 +40,7 @@ type Folder {
   name: String
   description: String
   subfolders: [String]
-  tasks: [Task]
+  tasks: [String]
   shareWith: [JSON]
 }
 
@@ -52,22 +52,6 @@ type Project {
   owners: [User]
   startDate: Date
   finishDate: Date
-  status: String
-}
-
-type TopTask {
-  id: String
-  folders: [Folder]
-  subtasks: [Task]
-  assignees: [User]
-  shareWith: [JSON]
-  name: String
-  comments: [Comment]
-  parent: User
-  creator: User
-  startDate: Date
-  finishDate: Date
-  importance: String
   status: String
 }
 
