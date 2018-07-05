@@ -39,11 +39,11 @@ const resolvers = {
       const group = await Group.findById(group.ib).populate('users')
       return group
     },
-    async getFolders (_, {ids}, context) {
+    async getFolders (_, {parent}, context) {
       const userId = getUserId(context)
       let folders
-      if (ids) {
-        folders = await Folder.find({ _id: ids })
+      if (parent) {
+        folders = await Folder.find({parent})
       } else {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')

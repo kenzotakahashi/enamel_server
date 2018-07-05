@@ -3,7 +3,7 @@ scalar JSON
 
 type Query {
   getGroup: Group
-  getFolders(ids: [String]): [Folder]
+  getFolders(parent: String): [Folder]
   getFolder(id: String!): Folder
   getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
@@ -59,7 +59,6 @@ type Project {
 type Task {
   id: String
   folders: [Folder]
-  # subtasks: [String]
   assignees: [User]
   shareWith: [JSON]
   name: String
