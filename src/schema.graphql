@@ -5,7 +5,7 @@ type Query {
   getGroup: Group
   getFolders(ids: [String]): [Folder]
   getFolder(id: String!): Folder
-  getTasks(ids: [String], folder: String): [Task]
+  getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
 }
 
@@ -20,7 +20,7 @@ type Mutation {
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Project
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, name: String): Task
-  deleteTask(id: String!, parent: String): Boolean
+  deleteTask(id: String!): Boolean
   createComment(body: String, parent: ShareInput): Comment
 }
 
@@ -58,7 +58,7 @@ type Project {
 type Task {
   id: String
   folders: [Folder]
-  subtasks: [String]
+  # subtasks: [String]
   assignees: [User]
   shareWith: [JSON]
   name: String

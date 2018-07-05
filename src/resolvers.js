@@ -56,11 +56,13 @@ const resolvers = {
       const userId = getUserId(context)
       return await Folder.findById(args.id).populate('shareWith')
     },
-    async getTasks (_, {ids, folder}, context) {
-      if (folder) {
-        return await populateTask(Task.find({ folders: folder }))
+    async getTasks (_, {parent, folder}, context) {
+      // const query = folder ? { folders: folder } : { parent }
+      // return await populateTask(Task.find(query)).sort({ createdAt: -1 })
+      if (parent) {
+        return await populateTask(Task.find({ parent })).sort({ createdAt: 1 })
       } else {
-        return await populateTask(Task.find({ _id: ids }))
+        return await populateTask(Task.find({ folders: folder })).sort({ createdAt: -1 })
       }
     },
     async getTask (_, args, context) {
@@ -72,9 +74,9 @@ const resolvers = {
       comments = await Comment.find({'parent.item': ObjectId(task.id)})
                               .populate('user', 'id name initials avatarColor')
       const {id, name, parent, folders, assignees, creator, shareWith,
-             startDate, finishDate, importance, status, subtasks} = task
+             startDate, finishDate, importance, status } = task
       return {id, name, parent, folders, assignees, creator, shareWith,
-             startDate, finishDate, importance, status, subtasks, comments}
+             startDate, finishDate, importance, status , comments}
     }
   },
   Mutation: {
@@ -95,29 +97,17 @@ const resolvers = {
         folders: folder ? [folder] : [],
         creator: userId
       })
-      if (parent) {
-        await Task.updateOne(
-          { _id: ObjectId(parent) },
-          { $push: { subtasks: task.id } }
-        )
-      }
-      return task
+      return await populateTask(task)
     },
     async updateTask(_, {id, name}, context) {
       const userId = getUserId(context)
-      const task = await Task.findById(id)
+      const task = await populateTask(Task.findById(id))
       task.set({name})
       await task.save()
       return task
     },
-    async deleteTask(_, {id, parent}, context) {
+    async deleteTask(_, {id}, context) {
       const userId = getUserId(context)
-      if (parent) {
-        await Task.updateOne(
-          { _id: ObjectId(parent) },
-          { $pull: { subtasks: id } }
-        )
-      }
       await Task.deleteOne({_id: id})
       return true
     },
