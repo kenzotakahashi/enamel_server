@@ -3,6 +3,7 @@ scalar JSON
 
 type Query {
   getGroup: Group
+  getFolders(ids: [String]): [Folder]
   folderTree: [JSON]
   getFolder(id: String!): Folder
   getTask(id: String!): Task
@@ -37,6 +38,8 @@ type User {
 type Folder {
   id: String
   name: String
+  description: String
+  subfolders: [String]
   tasks: [Task]
   shareWith: [JSON]
 }

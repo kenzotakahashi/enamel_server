@@ -75,6 +75,20 @@ const resolvers = {
       const group = await Group.findById(group.ib).populate('users')
       return group
     },
+    async getFolders (_, {ids}, context) {
+      const userId = getUserId(context)
+      if (ids) {
+        // return await Folder.find({ _id: { $in: ids.map(o => ObjectId(o)) } })
+        return await Folder.find({ _id: { $in: ids } })
+      } else {
+        const user = await User.findById(userId)
+        const groups = await Group.find({users: ObjectId(userId)}, '_id')
+        const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
+        return await Folder.find({ 'shareWith.item': { $in: ids } })
+      }
+    },
+
+
     async folderTree (_, args, context) {
       const userId = getUserId(context)
       const user = await User.findById(userId)
