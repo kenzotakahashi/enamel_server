@@ -2,6 +2,7 @@ scalar Date
 scalar JSON
 
 type Query {
+  getTeam: Team
   getGroup: Group
   getFolders(parent: String): [Folder]
   getFolder(id: String!): Folder
@@ -109,4 +110,3 @@ input ShareInput {
   kind: String
   item: String
 }
-

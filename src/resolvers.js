@@ -35,6 +35,11 @@ function populateTask(promise) {
 
 const resolvers = {
   Query: {
+    async getTeam (_, args, context) {
+      const userId = getUserId(context)
+      const user = await User.findById(userId)
+      return await Team.findById(user.team)
+    },
     async getGroup (_, {id}) {
       const group = await Group.findById(group.ib).populate('users')
       return group
@@ -73,7 +78,7 @@ const resolvers = {
     },
     async getComments (_, {parent}, context) {
       return await Comment.find({'parent.item': ObjectId(parent)})
-                          .populate('user', 'name initials avatarColor')      
+                          .populate('user', 'name initials avatarColor')
     }
   },
   Mutation: {
@@ -166,7 +171,7 @@ const resolvers = {
             role,
             status: 'pending'
           })
-          users.push(user.id)          
+          users.push(user.id)
         }
       }
       for (const id of groups) {

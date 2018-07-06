@@ -16,7 +16,6 @@ const Folder = buildModel('Folder', {
     item: { type: ObjectId, refPath: 'shareWith.kind' }
   }],
   parent: { type: ObjectId, ref: 'Folder' },
-  // subfolders: [{ type: ObjectId, ref: 'Folder' }],
 })
 module.exports.Folder = Folder
 
