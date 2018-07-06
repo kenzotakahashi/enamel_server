@@ -40,9 +40,8 @@ type User {
 type Folder {
   id: String
   name: String
+  parent: String
   description: String
-  subfolders: [String]
-  tasks: [String]
   shareWith: [JSON]
 }
 

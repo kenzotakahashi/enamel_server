@@ -53,6 +53,7 @@ const resolvers = {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')
         const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
+        console.log(ids)
         folders = await Folder.find({ 'shareWith.item': ids })
       }
       return folders
@@ -68,9 +69,9 @@ const resolvers = {
         return await populateTask(Task.find({ folders: folder })).sort({ createdAt: -1 })
       }
     },
-    async getTask (_, args, context) {
+    async getTask (_, {id}, context) {
       const userId = getUserId(context)
-      const task = await populateTask(Task.findById(args.id))
+      const task = await populateTask(Task.findById(id))
       if (!task) {
         throw new Error('Task with that id does not exist')
       }
@@ -212,7 +213,7 @@ const resolvers = {
       if (!valid) {
         throw new Error('Incorrect password')
       }
-      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '7d' })
+      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '30d' })
       return {token, user}
     },
     async createGroup (_, {name, initials, avatarColor, users}, context) {

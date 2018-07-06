@@ -26,6 +26,9 @@ module.exports.Project = Folder.discriminator('Project', new Schema({
   status: String
 }, {timestamps: true}))
 
+module.exports.Team = Folder.discriminator('Team', new Schema({
+}, {timestamps: true}))
+
 module.exports.Task = buildModel('Task', {
   folders: [{ type: ObjectId, ref: 'Folder' }],
   parent: { type: ObjectId, ref: 'Task' },
@@ -71,10 +74,6 @@ module.exports.Reaction = buildModel('Reaction', {
   emoji: String,
   comment: { type: ObjectId, ref: 'Comment' },
   user: { type: ObjectId, ref: 'User' }
-})
-
-module.exports.Team = buildModel('Team', {
-  name: String,
 })
 
 module.exports.Group = buildModel('Group', {
