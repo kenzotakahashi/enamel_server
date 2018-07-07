@@ -32,7 +32,6 @@ module.exports.Team = Folder.discriminator('Team', new Schema({
 module.exports.Task = buildModel('Task', {
   folders: [{ type: ObjectId, ref: 'Folder' }],
   parent: { type: ObjectId, ref: 'Task' },
-  subtasks: [{ type: ObjectId, ref: 'Task' }],
   assignees: [{ type: ObjectId, ref: 'User' }],
   shareWith: [{
     kind: String,
@@ -95,6 +94,8 @@ module.exports.User = buildModel('User', {
     type: String,
     default: ''
   },
+  firstname: String,
+  lastname: String,
   email: {
     type: String,
     required: true,

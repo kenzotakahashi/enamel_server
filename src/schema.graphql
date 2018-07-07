@@ -2,6 +2,7 @@ scalar Date
 scalar JSON
 
 type Query {
+  getUser(id: String): User
   getTeam: Team
   getGroup: Group
   getFolders(parent: String): [Folder]
@@ -14,7 +15,7 @@ type Query {
 type Mutation {
   captureEmail(email: String!): User
   invite(emails: [String], groups: [String], role: String): [String]
-  signup(id: String!, name: String!, password: String!): AuthPayload!
+  signup(id: String!, firstname: String!, lastname: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): String
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
@@ -29,10 +30,11 @@ type Mutation {
 type User {
   id: String
   name: String
+  firstname: String
+  lastname: String
   email: String
-  initials: String
   avatarColor: String
-  team: Team
+  team: String
   role: String
   status: String
 }

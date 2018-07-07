@@ -33,6 +33,15 @@ function populateTask(promise) {
     .populate('shareWith')
 }
 
+function randomChoice(arr) {
+  return arr[Math.floor(arr.length * Math.random())]
+}
+
+const avatarColors = [
+  "D81B60","F06292","F48FB1","FFB74D","FF9800","F57C00","00897B","4DB6AC","80CBC4",
+  "80DEEA","4DD0E1","00ACC1","9FA8DA","7986CB","3949AB","8E24AA","BA68C8","CE93D8"
+]
+
 const resolvers = {
   Query: {
     async getTeam (_, args, context) {
@@ -77,6 +86,11 @@ const resolvers = {
       }
       return task
     },
+    async getUser (_, {id}, context) {
+      const userId = getUserId(context)
+      console.log(id)
+      return await User.findById(id || userId)
+    },
     async getComments (_, {parent}, context) {
       return await Comment.find({'parent.item': ObjectId(parent)})
                           .populate('user', 'name initials avatarColor')
@@ -116,17 +130,7 @@ const resolvers = {
     },
     async createFolder(_, {parent, name, shareWith}, context) {
       const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
-      if (parent) {
-        await Folder.updateOne(
-          { _id: ObjectId(parent) },
-          { $push: { subfolders: folder.id } }
-        )
-      }
-      // Right now populating is unnecessary
-      return await Folder.findById(folder.id).populate({
-        path: 'shareWith.item',
-        select: '_id'
-      })
+      return await Folder.findById(args.id).populate('shareWith.item')
     },
     async createProject(_, {parent, name, owners, startDate, finishDate, shareWith}, context) {
       const common = await folderCommon(context, parent, name, shareWith)
@@ -136,13 +140,7 @@ const resolvers = {
         finishDate,
         status: 'Green'
       }))
-      if (parent) {
-        await Folder.updateOne(
-          { _id: ObjectId(parent) },
-          { $push: { subfolders: folder.id } }
-        )
-      }
-      return await Project.findById(folder.id).populate('shareWith.item')
+      return await Project.findById(folder.id).populate('shareWith')
     },
     async captureEmail (_, {email}) {
       const isEmailTaken = await User.findOne({email})
@@ -182,19 +180,23 @@ const resolvers = {
       }
       return existingUsers
     },
-    async signup (_, {id, name, password}) {
+    async signup (_, {id, firstname, lastname, password}) {
       const user = await User.findById(id)
       if (user.password) {
         // throw new Error('You have already signed up')
       }
       const common = {
-        name,
+        firstname,
+        lastname,
+        name: `${firstname} ${lastname}`,
+        avatarColor: randomChoice(avatarColors),
         password: await bcrypt.hash(password, 10),
         status: 'Active'
       }
-      if (user.role === 'Owner') {
+      if (false) {
+      // if (user.role === 'Owner') {
         const team = await Team.create({
-          name: `${name}'s Team`
+          name: `${common.name}'s Team`
         })
         user.set(Object.assign(common, {team: team.id}))
       } else {
