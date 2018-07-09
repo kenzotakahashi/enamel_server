@@ -11,16 +11,19 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 async function folderCommon(context, parent, name, shareWith) {
   const user = getUserId(context)
-  const team = (await User.findById(user)).team
   return {
     name,
     parent,
     subfolders: [],
     tasks: [],
-    shareWith: shareWith.map(o => ({
-      ...o,
-      item: ObjectId(o.kind === 'Team' ? team : o.item)
-    }))
+    // shareWith: shareWith.map(o => ({
+    //   ...o,
+    //   item: ObjectId(o.kind === 'Team' ? team : o.item)
+    // }))
+    shareWith: shareWith.concat(parent ? [] : [{
+      kind: Team,
+      item: (await User.findById(user)).team
+    }])
   }
 }
 
@@ -62,7 +65,6 @@ const resolvers = {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')
         const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
-        console.log(ids)
         folders = await Folder.find({ 'shareWith.item': ids })
       }
       return folders
@@ -88,7 +90,6 @@ const resolvers = {
     },
     async getUser (_, {id}, context) {
       const userId = getUserId(context)
-      console.log(id)
       return await User.findById(id || userId)
     },
     async getComments (_, {parent}, context) {
@@ -130,9 +131,9 @@ const resolvers = {
     },
     async createFolder(_, {parent, name, shareWith}, context) {
       const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
-      return await Folder.findById(args.id).populate('shareWith.item')
+      return await Folder.findById(folder.id).populate('shareWith.item')
     },
-    async createProject(_, {parent, name, owners, startDate, finishDate, shareWith}, context) {
+    async createProject(_, {parent, name, shareWith, owners, startDate, finishDate}, context) {
       const common = await folderCommon(context, parent, name, shareWith)
       const folder = await Project.create(Object.assign(common, {
         owners,
