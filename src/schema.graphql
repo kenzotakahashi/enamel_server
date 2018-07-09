@@ -20,7 +20,7 @@ type Mutation {
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): String
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
-                startDate: Date, finishDate: Date, shareWith: [ShareInput]): Project
+                startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, name: String): Task
   deleteTask(id: String!): Boolean
@@ -50,7 +50,8 @@ type Folder {
 type Project {
   id: String
   name: String
-  tasks: [Task]
+  parent: String
+  description: String
   shareWith: [JSON]
   owners: [User]
   startDate: Date

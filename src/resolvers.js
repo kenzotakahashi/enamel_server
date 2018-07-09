@@ -141,7 +141,7 @@ const resolvers = {
         finishDate,
         status: 'Green'
       }))
-      return await Project.findById(folder.id).populate('shareWith')
+      return await Project.findById(folder.id).populate('shareWith.item')
     },
     async captureEmail (_, {email}) {
       const isEmailTaken = await User.findOne({email})
