@@ -10,19 +10,13 @@ const { getUserId } = require('./utils')
 const JWT_SECRET = process.env.JWT_SECRET
 
 async function folderCommon(context, parent, name, shareWith) {
-  const user = getUserId(context)
+  const userId = getUserId(context)
   return {
     name,
-    parent,
-    subfolders: [],
-    tasks: [],
-    // shareWith: shareWith.map(o => ({
-    //   ...o,
-    //   item: ObjectId(o.kind === 'Team' ? team : o.item)
-    // }))
+    parent: parent || undefined,
     shareWith: shareWith.concat(parent ? [] : [{
-      kind: Team,
-      item: (await User.findById(user)).team
+      kind: 'Team',
+      item: (await User.findById(userId)).team
     }])
   }
 }
@@ -142,6 +136,11 @@ const resolvers = {
         status: 'Green'
       }))
       return await Project.findById(folder.id).populate('shareWith.item')
+    },
+    async deleteFolder(_, {id}, context) {
+      const userId = getUserId(context)
+      await Folder.deleteOne({_id: id})
+      return true
     },
     async captureEmail (_, {email}) {
       const isEmailTaken = await User.findOne({email})

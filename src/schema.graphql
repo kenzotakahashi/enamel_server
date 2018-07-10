@@ -21,6 +21,7 @@ type Mutation {
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
+  deleteFolder(id: String!): Boolean
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, name: String): Task
   deleteTask(id: String!): Boolean
