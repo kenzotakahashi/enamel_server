@@ -46,8 +46,15 @@ const resolvers = {
       const user = await User.findById(userId)
       return await Team.findById(user.team)
     },
-    async getGroup (_, {id}) {
-      const group = await Group.findById(group.ib).populate('users')
+    async getGroup (_, {id}, context) {
+      const userId = getUserId(context)
+      const group = await Group.findById(id).populate('users')
+      return group
+    },
+    async getGroups (_, args, context) {
+      const userId = getUserId(context)
+      const team = (await User.findById(userId)).team
+      return await Group.find({team})
       return group
     },
     async getFolders (_, {parent}, context) {
@@ -85,6 +92,11 @@ const resolvers = {
     async getUser (_, {id}, context) {
       const userId = getUserId(context)
       return await User.findById(id || userId)
+    },
+    async getUsers (_, args, context) {
+      const userId = getUserId(context)
+      const team = (await User.findById(userId)).team
+      return await User.find({team})
     },
     async getComments (_, {parent}, context) {
       return await Comment.find({'parent.item': ObjectId(parent)})

@@ -3,8 +3,10 @@ scalar JSON
 
 type Query {
   getUser(id: String): User
+  getUsers: [User]
   getTeam: Team
   getGroup: Group
+  getGroups: [Group]
   getFolders(parent: String): [Folder]
   getFolder(id: String!): Folder
   getTasks(folder: String, parent: String): [Task]
