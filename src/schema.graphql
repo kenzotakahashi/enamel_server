@@ -16,10 +16,10 @@ type Query {
 
 type Mutation {
   captureEmail(email: String!): User
-  invite(emails: [String], groups: [String], role: String): [String]
+  invite(emails: [String], groups: [String], role: String): [User]
   signup(id: String!, firstname: String!, lastname: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
-  createGroup(name: String, initials: String, avatarColor: String, users: [String]): String
+  createGroup(name: String, initials: String, avatarColor: String, users: [String]): Group
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
@@ -92,10 +92,11 @@ type Team {
 
 type Group {
   id: String
+  team: String
   name: String
   initials: String
   avatarColor: String
-  users: [User]
+  users: [String]
 }
 
 type Record {

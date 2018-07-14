@@ -167,14 +167,12 @@ const resolvers = {
       return user
     },
     async invite (_, {emails, groups, role}, context) {
-      const user = getUserId(context)
-      const team = (await User.findById(user)).team
+      const userId = getUserId(context)
+      const team = (await User.findById(userId)).team
       const teamMembers = (await User.find({team}, 'email')).map(o => o.email)
       const users = []
-      const existingUsers = []
       for (const email of emails) {
         if (teamMembers.includes(email)) {
-          existingUsers.push(email)
         } else {
           const user = await User.create({
             email,
@@ -182,20 +180,20 @@ const resolvers = {
             role,
             status: 'pending'
           })
-          users.push(user.id)
+          users.push(user)
         }
       }
+      const userIds = users.map(o => o.id)
       for (const id of groups) {
         const group = await Group.findById(id)
-        group.users = users
+        group.users = userIds
         await group.save()
       }
-      return existingUsers
+      return users
     },
     async signup (_, {id, firstname, lastname, password}) {
       const user = await User.findById(id)
       if (user.password) {
-        // throw new Error('You have already signed up')
       }
       const common = {
         firstname,
@@ -231,11 +229,16 @@ const resolvers = {
       return {token, user}
     },
     async createGroup (_, {name, initials, avatarColor, users}, context) {
-      const user = getUserId(context)
+      const userId = getUserId(context)
+      const team = (await User.findById(userId)).team
       const group = await Group.create({
-        name, initials, avatarColor, users: users.map(o => ObjectId(o))
+        name,
+        team,
+        initials,
+        avatarColor,
+        users: users.map(o => ObjectId(o))
       })
-      return group.id
+      return group
     }
   },
   Date: new GraphQLScalarType({

@@ -76,6 +76,7 @@ module.exports.Reaction = buildModel('Reaction', {
 })
 
 module.exports.Group = buildModel('Group', {
+  team: { type: ObjectId, ref: 'Team' },
   name: String,
   initials: String,
   avatarColor: String,
