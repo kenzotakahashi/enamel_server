@@ -41,9 +41,11 @@ type User {
   lastname: String
   email: String
   avatarColor: String
+  jobTitle: String
   team: String
   role: String
   status: String
+  createdAt: Date
 }
 
 type Folder {

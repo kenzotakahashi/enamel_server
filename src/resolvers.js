@@ -193,8 +193,6 @@ const resolvers = {
     },
     async signup (_, {id, firstname, lastname, password}) {
       const user = await User.findById(id)
-      if (user.password) {
-      }
       const common = {
         firstname,
         lastname,
@@ -203,12 +201,14 @@ const resolvers = {
         password: await bcrypt.hash(password, 10),
         status: 'Active'
       }
-      if (false) {
-      // if (user.role === 'Owner') {
+      if (user.role === 'Owner') {
         const team = await Team.create({
           name: `${common.name}'s Team`
         })
-        user.set(Object.assign(common, {team: team.id}))
+        user.set(Object.assign(common, {
+          team: team.id,
+          jobTitle: 'CEO/Owner/Founder'
+        }))
       } else {
         user.set(common)
       }
@@ -228,6 +228,16 @@ const resolvers = {
       const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '30d' })
       return {token, user}
     },
+    // async deleteUser (_, {id, groups, notify}, context) {
+    //   const userId = getUserId(context)
+    //   await User.deleteOne({_id: id})
+    //   await Group.update(
+    //     {_id: { $in: groups} },
+    //     { },
+    //     { multi: true }
+    //   )
+    //   return true
+    // },
     async createGroup (_, {name, initials, avatarColor, users}, context) {
       const userId = getUserId(context)
       const team = (await User.findById(userId)).team
