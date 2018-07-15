@@ -54,7 +54,7 @@ const resolvers = {
     async getGroups (_, args, context) {
       const userId = getUserId(context)
       const team = (await User.findById(userId)).team
-      return await Group.find({team})
+      return await Group.find({team}).sort({ createdAt: -1 })
       return group
     },
     async getFolders (_, {parent}, context) {
@@ -231,14 +231,13 @@ const resolvers = {
     async createGroup (_, {name, initials, avatarColor, users}, context) {
       const userId = getUserId(context)
       const team = (await User.findById(userId)).team
-      const group = await Group.create({
+      return await Group.create({
         name,
         team,
         initials,
         avatarColor,
-        users: users.map(o => ObjectId(o))
+        users
       })
-      return group
     },
     async addUsersToGroup (_, {id, users}, context) {
       const userId = getUserId(context)
@@ -255,6 +254,19 @@ const resolvers = {
         { $pullAll: { users } },
         { new: true }
       )
+    },
+    async updateGroup (_, {id, name, initials, avatarColor}, context) {
+      const userId = getUserId(context)
+      return await Group.findOneAndUpdate(
+        { _id: id },
+        { $set: { name, initials, avatarColor } },
+        { new: true }
+      )
+    },
+    async deleteGroup (_, {id}, context) {
+      const userId = getUserId(context)
+      await Group.deleteOne({_id: id})
+      return true
     }
   },
   Date: new GraphQLScalarType({

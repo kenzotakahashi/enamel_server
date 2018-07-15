@@ -19,7 +19,6 @@ type Mutation {
   invite(emails: [String], groups: [String], role: String): [User]
   signup(id: String!, firstname: String!, lastname: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
-  createGroup(name: String, initials: String, avatarColor: String, users: [String]): Group
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
@@ -28,8 +27,11 @@ type Mutation {
   updateTask(id: String!, name: String): Task
   deleteTask(id: String!): Boolean
   createComment(body: String, parent: ShareInput): Comment
+  createGroup(name: String, initials: String, avatarColor: String, users: [String]): Group
   addUsersToGroup(id: String!, users: [String]): Group
   removeUsersFromGroup(id: String!, users: [String]): Group
+  updateGroup(id: String!, name: String, initials: String, avatarColor: String): Group
+  deleteGroup(id: String!): Boolean
 }
 
 type User {
