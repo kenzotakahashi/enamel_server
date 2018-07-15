@@ -239,6 +239,14 @@ const resolvers = {
         users: users.map(o => ObjectId(o))
       })
       return group
+    },
+    async addUsersToGroup (_, {id, users}, context) {
+      const userId = getUserId(context)
+      return await Group.findOneAndUpdate(
+        { _id: id },
+        { $push: { users: { $each: users } } },
+        { new: true }
+      )
     }
   },
   Date: new GraphQLScalarType({
