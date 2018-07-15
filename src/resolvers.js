@@ -247,6 +247,14 @@ const resolvers = {
         { $push: { users: { $each: users } } },
         { new: true }
       )
+    },
+    async removeUsersFromGroup (_, {id, users}, context) {
+      const userId = getUserId(context)
+      return await Group.findOneAndUpdate(
+        { _id: id },
+        { $pullAll: { users } },
+        { new: true }
+      )
     }
   },
   Date: new GraphQLScalarType({

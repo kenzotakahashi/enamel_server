@@ -29,6 +29,7 @@ type Mutation {
   deleteTask(id: String!): Boolean
   createComment(body: String, parent: ShareInput): Comment
   addUsersToGroup(id: String!, users: [String]): Group
+  removeUsersFromGroup(id: String!, users: [String]): Group
 }
 
 type User {
