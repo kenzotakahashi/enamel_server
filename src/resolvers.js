@@ -35,7 +35,7 @@ function populateTask(promise) {
     .populate('folders', 'name')
     .populate('parent', 'name')
     .populate('assignees', 'name email')
-    .populate('creator', 'name email')
+    .populate('creator', 'name email firstname lastname')
     .populate('shareWith')
 }
 
@@ -132,10 +132,10 @@ const resolvers = {
       })
       return await populateTask(Task.findById(task.id))
     },
-    async updateTask(_, {id, name}, context) {
+    async updateTask(_, {id, input}, context) {
       const userId = getUserId(context)
       const task = await populateTask(Task.findById(id))
-      task.set({name})
+      task.set(input)
       await task.save()
       return task
     },
