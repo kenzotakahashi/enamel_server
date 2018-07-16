@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
-const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models/models')
+const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models')
 const { getUserId } = require('./utils')
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -18,6 +18,15 @@ async function folderCommon(context, parent, name, shareWith) {
       kind: 'Team',
       item: (await User.findById(userId)).team
     }])
+  }
+}
+
+async function deleteSubTasks(id) {
+  await Comment.deleteMany({'parent.item': id})
+  const tasks = await Task.find({parent: id})
+  for (const task of tasks) {
+    await deleteSubTasks(task.id)
+    await Task.deleteOne({_id: task.id})
   }
 }
 
@@ -133,6 +142,7 @@ const resolvers = {
     async deleteTask(_, {id}, context) {
       const userId = getUserId(context)
       await Task.deleteOne({_id: id})
+      deleteSubTasks(id)
       return true
     },
     async createFolder(_, {parent, name, shareWith}, context) {
