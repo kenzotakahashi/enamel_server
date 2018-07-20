@@ -4,8 +4,12 @@ const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
+const sg = require('@sendgrid/mail')
+sg.setApiKey(process.env.SENDGRID_API_KEY)
+
 const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models')
 const { getUserId } = require('./utils')
+const { welcomeEmail, invitationEmail } = require('./emails')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -34,7 +38,7 @@ function populateTask(promise) {
   return promise
     .populate('folders', 'name')
     .populate('parent', 'name')
-    .populate('assignees', 'name email')
+    .populate('assignees', 'name email firstname lastname avatarColor')
     .populate('creator', 'name email firstname lastname')
     .populate('shareWith')
 }
@@ -75,7 +79,7 @@ const resolvers = {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')
         const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
-        folders = await Folder.find({ 'shareWith.item': ids })
+        folders = await Folder.find({ 'shareWith.item': ids }).populate('shareWith')
       }
       return folders
     },
@@ -134,10 +138,11 @@ const resolvers = {
     },
     async updateTask(_, {id, input}, context) {
       const userId = getUserId(context)
-      const task = await populateTask(Task.findById(id))
-      task.set(input)
-      await task.save()
-      return task
+      return await populateTask(Task.findOneAndUpdate(
+        { _id: id },
+        { $set: input },
+        { new: true }
+      ))
     },
     async deleteTask(_, {id}, context) {
       const userId = getUserId(context)
@@ -159,6 +164,14 @@ const resolvers = {
       }))
       return await Project.findById(folder.id).populate('shareWith.item')
     },
+    async updateFolder(_, {id, input}, context) {
+      const userId = getUserId(context)
+      return await Folder.findOneAndUpdate(
+        { _id: id },
+        { $set: input },
+        { new: true }
+      ).populate('shareWith')
+    },
     async deleteFolder(_, {id}, context) {
       const userId = getUserId(context)
       await Folder.deleteOne({_id: id})
@@ -172,13 +185,16 @@ const resolvers = {
       const user = await User.create({
         email,
         role: 'Owner',
-        status: 'pending'
+        status: 'Pending'
       })
+      sg.send(welcomeEmail(email, user))
+
       return user
     },
     async invite (_, {emails, groups, role}, context) {
       const userId = getUserId(context)
-      const team = (await User.findById(userId)).team
+      const thisUser = await User.findById(userId)
+      const team = thisUser.team
       const teamMembers = (await User.find({team}, 'email')).map(o => o.email)
       const users = []
       for (const email of emails) {
@@ -188,9 +204,10 @@ const resolvers = {
             email,
             team,
             role,
-            status: 'pending'
+            status: 'Pending'
           })
           users.push(user)
+          sg.send(invitationEmail(email, user, thisUser))
         }
       }
       const userIds = users.map(o => o.id)
@@ -200,6 +217,13 @@ const resolvers = {
         await group.save()
       }
       return users
+    },
+    async decline (_, {id}) {
+      await User.findOneAndUpdate(
+        { _id: id },
+        { $set: { status: 'Declined' } },
+      )
+      return true
     },
     async signup (_, {id, firstname, lastname, password}) {
       const user = await User.findById(id)

@@ -17,11 +17,13 @@ type Query {
 type Mutation {
   captureEmail(email: String!): User
   invite(emails: [String], groups: [String], role: String): [User]
+  decline(id: String!): Boolean
   signup(id: String!, firstname: String!, lastname: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
+  updateFolder(id: String!, input: FolderInput): Folder
   deleteFolder(id: String!): Boolean
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, input: TaskInput): Task
@@ -74,6 +76,7 @@ type Task {
   assignees: [User]
   shareWith: [JSON]
   name: String
+  description: String
   parent: User
   creator: User
   startDate: Date
@@ -126,10 +129,19 @@ input ShareInput {
 
 input TaskInput {
   name: String
+  description: String
   parent: String
   creator: String
+  assignees: [String]
   startDate: Date
   finishDate: Date
   importance: String
   status: String
+}
+
+input FolderInput {
+  name: String
+  parent: String
+  description: String
+  shareWith: [ShareInput]
 }

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose")
-const timeZone = require('mongoose-timezone')
 const moment = require('moment')
 const Schema = mongoose.Schema
 const ObjectId = Schema.Types.ObjectId
@@ -109,7 +108,6 @@ module.exports.User = buildModel('User', {
     default: ''
   },
   avatarColor: String,
-  initials: String,
   team: { type: ObjectId, ref: 'Team' },
   role: String,
   status: String

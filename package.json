@@ -11,14 +11,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "graphql-yoga": "1.14.10",
+    "@sendgrid/mail": "6.3.1",
     "bcrypt": "^2.0.1",
     "dotenv": "^6.0.0",
     "graphql": "^0.13.2",
+    "graphql-yoga": "1.14.10",
     "jsonwebtoken": "^8.3.0",
     "moment": "^2.22.2",
     "mongoose": "^5.1.5",
-    "mongoose-timezone": "^1.1.0",
     "nodemon": "^1.17.5",
     "uuid": "3.3.0"
   }
