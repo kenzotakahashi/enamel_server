@@ -1,4 +1,5 @@
 const url = process.env.CLIENT_URL
+const fromEmail = 'noreply@enamel.tech'
 
 module.exports.invitationEmail = function (email, user, thisUser) {
   const text = `
@@ -22,7 +23,7 @@ ${thisUser.name}
   return {
     to: `${email}`,
     from: {
-      email: 'test@example.com',
+      email: fromEmail,
       name: `${thisUser.name} at enamel`
     },
     subject: 'Invitation to enamel',
@@ -43,7 +44,7 @@ ${url}/signup/${user.id}
   return {
     to: `${email}`,
     from: {
-      email: 'test@example.com',
+      email: fromEmail,
       name: 'enamel'
     },
     subject: 'Please complete your registration',
