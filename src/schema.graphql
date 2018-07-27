@@ -20,20 +20,25 @@ type Mutation {
   decline(id: String!): Boolean
   signup(id: String!, firstname: String!, lastname: String!, password: String!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
+  
   createFolder(parent: String, name: String!, shareWith: [ShareInput]): Folder
   createProject(parent: String, name: String!, owners: [String],
                 startDate: Date, finishDate: Date, shareWith: [ShareInput]): Folder
   updateFolder(id: String!, input: FolderInput): Folder
   deleteFolder(id: String!): Boolean
+  
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, input: TaskInput): Task
   deleteTask(id: String!): Boolean
   createComment(body: String, parent: ShareInput): Comment
+  
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): Group
   addUsersToGroup(id: String!, users: [String]): Group
   removeUsersFromGroup(id: String!, users: [String]): Group
   updateGroup(id: String!, name: String, initials: String, avatarColor: String): Group
   deleteGroup(id: String!): Boolean
+
+  updateUser(id: String! input: UserInput): User
 }
 
 type User {
@@ -46,6 +51,8 @@ type User {
   jobTitle: String
   team: String
   role: String
+  rate: Float
+  rateType: String
   status: String
   createdAt: Date
 }
@@ -126,6 +133,20 @@ type AuthPayload {
 input ShareInput {
   kind: String
   item: String
+}
+
+input UserInput {
+  name: String
+  firstname: String
+  lastname: String
+  email: String
+  avatarColor: String
+  jobTitle: String
+  team: String
+  role: String
+  rate: Float
+  rateType: String
+  status: String
 }
 
 input TaskInput {

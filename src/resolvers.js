@@ -311,7 +311,15 @@ const resolvers = {
       const userId = getUserId(context)
       await Group.deleteOne({_id: id})
       return true
-    }
+    },
+    async updateUser(_, {id, input}, context) {
+      const userId = getUserId(context)
+      return await User.findOneAndUpdate(
+        { _id: id },
+        { $set: input },
+        { new: true }
+      )
+    },
   },
   Date: new GraphQLScalarType({
     name: 'Date',
