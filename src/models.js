@@ -48,6 +48,9 @@ module.exports.Task = buildModel('Task', {
   finishDate: {
     type: Date,
   },
+  duration: {
+    type: Number
+  },
   importance: {
     type: String,
     default: 'Normal'

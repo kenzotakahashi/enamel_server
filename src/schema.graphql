@@ -81,6 +81,7 @@ type Task {
   creator: User
   startDate: Date
   finishDate: Date
+  duration: Int
   importance: String
   status: String
   createdAt: Date
@@ -135,6 +136,7 @@ input TaskInput {
   assignees: [String]
   startDate: Date
   finishDate: Date
+  duration: Int
   importance: String
   status: String
 }
