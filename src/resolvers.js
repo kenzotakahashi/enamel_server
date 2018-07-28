@@ -78,7 +78,11 @@ const resolvers = {
       } else {
         const user = await User.findById(userId)
         const groups = await Group.find({users: ObjectId(userId)}, '_id')
-        const ids = groups.map(o => o._id).concat([ObjectId(userId), user.team])
+        const ids = groups.map(o => o._id).concat(
+          ['External User', 'Collaborator'].includes(user.role)
+          ? [ObjectId(userId)]
+          : [ObjectId(userId), user.team]
+        )
         folders = await Folder.find({ 'shareWith.item': ids }).populate('shareWith')
       }
       return folders
@@ -114,6 +118,21 @@ const resolvers = {
     async getComments (_, {parent}, context) {
       return await Comment.find({'parent.item': ObjectId(parent)})
                           .populate('user', 'name initials avatarColor')
+    },
+    async getRecord (_, {id, task}, context) {
+      const user = getUserId(context)
+      if (id) {
+        return await Record.findById(id)       
+      } else {
+        return await Record.findOne({
+          user,
+          task,
+          date: {
+            $gte: moment().startOf('day'),
+            $lte: moment().endOf('day')
+          }
+        })
+      }
     }
   },
   Mutation: {
@@ -320,6 +339,23 @@ const resolvers = {
         { new: true }
       )
     },
+    async createRecord (_, {input}, context) {
+      const userId = getUserId(context)
+      return await Record.create(input)
+    },
+    async updateRecord (_, {id, input}, context) {
+      const userId = getUserId(context)
+      return await Record.findOneAndUpdate(
+        { _id: id },
+        { $set: input },
+        { new: true }
+      )
+    },
+    async deleteRecord (_, {id}, context) {
+      const userId = getUserId(context)
+      await Record.deleteOne({_id: id})
+      return true      
+    }
   },
   Date: new GraphQLScalarType({
     name: 'Date',

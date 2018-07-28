@@ -89,7 +89,8 @@ module.exports.Record = buildModel('Record', {
   user: { type: ObjectId, ref: 'User' },
   task: { type: ObjectId, ref: 'Task' },
   date: Date,
-  timeSpent: Number
+  timeSpent: String,
+  comment: String
 })
 
 module.exports.User = buildModel('User', {
