@@ -12,7 +12,7 @@ type Query {
   getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
   getComments(parent: String): [Comment]
-  getRecord(id: String, task: String): Record
+  getRecord(id: String, task: String, date: String): Record
 }
 
 type Mutation {

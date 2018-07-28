@@ -119,7 +119,7 @@ const resolvers = {
       return await Comment.find({'parent.item': ObjectId(parent)})
                           .populate('user', 'name initials avatarColor')
     },
-    async getRecord (_, {id, task}, context) {
+    async getRecord (_, {id, task, date}, context) {
       const user = getUserId(context)
       if (id) {
         return await Record.findById(id)       
@@ -128,8 +128,8 @@ const resolvers = {
           user,
           task,
           date: {
-            $gte: moment().startOf('day'),
-            $lte: moment().endOf('day')
+            $gte: moment(date).startOf('day'),
+            $lte: moment(date).endOf('day')
           }
         })
       }
