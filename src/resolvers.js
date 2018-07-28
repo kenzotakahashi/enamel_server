@@ -9,7 +9,7 @@ sg.setApiKey(process.env.SENDGRID_API_KEY)
 
 const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models')
 const { getUserId } = require('./utils')
-const { welcomeEmail, invitationEmail } = require('./emails')
+const { welcomeEmail, invitationEmail, notificationNewUser } = require('./emails')
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -207,6 +207,7 @@ const resolvers = {
         status: 'Pending'
       })
       sg.send(welcomeEmail(email, user))
+      sg.send(notificationNewUser(email, user))
 
       return user
     },

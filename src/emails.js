@@ -51,3 +51,23 @@ ${url}/signup/${user.id}
     text
   }
 }
+
+module.exports.notificationNewUser = function(email, user) {
+   const text = `
+New user:
+
+${email}
+ `
+
+   return {
+     to: `kenzotakahashi2@gmail.com`,
+     from: {
+       email: fromEmail,
+       name: 'enamel'
+     },
+     subject: 'New user on enamel',
+     text
+   } 
+}
+
+
