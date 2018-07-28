@@ -340,8 +340,11 @@ const resolvers = {
       )
     },
     async createRecord (_, {input}, context) {
-      const userId = getUserId(context)
-      return await Record.create(input)
+      const user = getUserId(context)
+      return await Record.create({
+        ...input,
+        user
+      })
     },
     async updateRecord (_, {id, input}, context) {
       const userId = getUserId(context)

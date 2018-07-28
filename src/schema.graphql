@@ -178,6 +178,6 @@ input FolderInput {
 input RecordInput {
   task: String
   date: Date
-  timeSpent: Float
+  timeSpent: String
   comment: String
 }
