@@ -267,7 +267,7 @@ const resolvers = {
         user.set(common)
       }
       await user.save()
-      const token = jwt.sign({id: user.id, email: user.email}, JWT_SECRET, { expiresIn: '1y' })
+      const token = jwt.sign({id: user.id, email: user.email}, JWT_SECRET)
       return {token, user}
     },
     async login (_, {email, password}) {
@@ -279,7 +279,7 @@ const resolvers = {
       if (!valid) {
         throw new Error('Incorrect password')
       }
-      const token = jwt.sign({id: user.id, email}, JWT_SECRET, { expiresIn: '30d' })
+      const token = jwt.sign({id: user.id, email}, JWT_SECRET)
       return {token, user}
     },
     // async deleteUser (_, {id, groups, notify}, context) {
