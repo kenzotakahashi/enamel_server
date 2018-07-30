@@ -2,6 +2,7 @@ const { GraphQLScalarType } = require('graphql')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const moment = require('moment')
+const nodeMailer = require('nodemailer')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
 const sg = require('@sendgrid/mail')
@@ -12,6 +13,16 @@ const { getUserId } = require('./utils')
 const { welcomeEmail, invitationEmail, notificationNewUser } = require('./emails')
 
 const JWT_SECRET = process.env.JWT_SECRET
+
+const transporter = nodeMailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: 'kenzotakahashi2@gmail.com',
+      pass: process.env.GMAIL_PASSWORD
+    }
+})
 
 async function folderCommon(context, parent, name, shareWith) {
   const userId = getUserId(context)
@@ -206,8 +217,10 @@ const resolvers = {
         role: 'Owner',
         status: 'Pending'
       })
-      sg.send(welcomeEmail(email, user))
-      sg.send(notificationNewUser(email, user))
+      // sg.send(welcomeEmail(email, user))
+      // sg.send(notificationNewUser(email, user))
+      transporter.sendMail(welcomeEmail(email, user))
+      transporter.sendMail(notificationNewUser(email, user))
 
       return user
     },
@@ -227,7 +240,7 @@ const resolvers = {
             status: 'Pending'
           })
           users.push(user)
-          sg.send(invitationEmail(email, user, thisUser))
+          transporter.sendMail(invitationEmail(email, user, thisUser))
         }
       }
       const userIds = users.map(o => o.id)
