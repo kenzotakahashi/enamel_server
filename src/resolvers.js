@@ -1,12 +1,13 @@
 const { GraphQLScalarType } = require('graphql')
+const { withFilter } = require('graphql-yoga')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const moment = require('moment')
 const nodeMailer = require('nodemailer')
 const mongoose = require('mongoose')
 const ObjectId = mongoose.Types.ObjectId
-const sg = require('@sendgrid/mail')
-sg.setApiKey(process.env.SENDGRID_API_KEY)
+// const sg = require('@sendgrid/mail')
+// sg.setApiKey(process.env.SENDGRID_API_KEY)
 
 const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models')
 const { getUserId } = require('./utils')
@@ -25,7 +26,7 @@ const transporter = nodeMailer.createTransport({
 })
 
 async function folderCommon(context, parent, name, shareWith) {
-  const userId = getUserId(context)
+  const userId = getUserId(request)
   return {
     name,
     parent: parent || undefined,
@@ -65,24 +66,24 @@ const avatarColors = [
 
 const resolvers = {
   Query: {
-    async getTeam (_, args, context) {
-      const userId = getUserId(context)
+    async getTeam (_, args, {request, pubsub}) {
+      const userId = getUserId(request)
       const user = await User.findById(userId)
       return await Team.findById(user.team)
     },
-    async getGroup (_, {id}, context) {
-      const userId = getUserId(context)
+    async getGroup (_, {id}, {request}) {
+      const userId = getUserId(request)
       const group = await Group.findById(id).populate('users')
       return group
     },
-    async getGroups (_, args, context) {
-      const userId = getUserId(context)
+    async getGroups (_, args, {request}) {
+      const userId = getUserId(request)
       const team = (await User.findById(userId)).team
       return await Group.find({team}).sort({ createdAt: -1 })
       return group
     },
-    async getFolders (_, {parent}, context) {
-      const userId = getUserId(context)
+    async getFolders (_, {parent}, {request}) {
+      const userId = getUserId(request)
       let folders
       if (parent) {
         folders = await Folder.find({parent})
@@ -98,40 +99,40 @@ const resolvers = {
       }
       return folders
     },
-    async getFolder (_, args, context) {
-      const userId = getUserId(context)
+    async getFolder (_, args, {request}) {
+      const userId = getUserId(request)
       return await Folder.findById(args.id).populate('shareWith')
     },
-    async getTasks (_, {parent, folder}, context) {
+    async getTasks (_, {parent, folder}, {request}) {
       if (parent) {
         return await populateTask(Task.find({ parent })).sort({ createdAt: 1 })
       } else {
         return await populateTask(Task.find({ folders: folder })).sort({ createdAt: -1 })
       }
     },
-    async getTask (_, {id}, context) {
-      const userId = getUserId(context)
+    async getTask (_, {id}, {request}) {
+      const userId = getUserId(request)
       const task = await populateTask(Task.findById(id))
       if (!task) {
         throw new Error('Task with that id does not exist')
       }
       return task
     },
-    async getUser (_, {id}, context) {
-      const userId = getUserId(context)
+    async getUser (_, {id}, {request}) {
+      const userId = getUserId(request)
       return await User.findById(id || userId)
     },
-    async getUsers (_, args, context) {
-      const userId = getUserId(context)
+    async getUsers (_, args, {request}) {
+      const userId = getUserId(request)
       const team = (await User.findById(userId)).team
       return await User.find({team})
     },
-    async getComments (_, {parent}, context) {
+    async getComments (_, {parent}, {request}) {
       return await Comment.find({'parent.item': ObjectId(parent)})
                           .populate('user', 'name initials avatarColor')
     },
-    async getRecord (_, {id, task, date}, context) {
-      const user = getUserId(context)
+    async getRecord (_, {id, task, date}, {request}) {
+      const user = getUserId(request)
       if (id) {
         return await Record.findById(id)       
       } else {
@@ -147,8 +148,8 @@ const resolvers = {
     }
   },
   Mutation: {
-    async createComment(_, {body, parent}, context) {
-      const userId = getUserId(context)
+    async createComment(_, {body, parent}, {request}) {
+      const userId = getUserId(request)
       const comment = await Comment.create({
         body,
         user: userId,
@@ -156,35 +157,37 @@ const resolvers = {
       })
       return await Comment.findById(comment.id).populate('user', 'name initials avatarColor')
     },
-    async createTask(_, {folder, parent, name}, context) {
-      const userId = getUserId(context)
+    async createTask(_, {folder, parent, name}, {request, pubsub}) {
+      const userId = getUserId(request)
       const task = await Task.create({
         name,
         parent,
         folders: folder ? [folder] : [],
         creator: userId
       })
-      return await populateTask(Task.findById(task.id))
+      const taskAdded = await populateTask(Task.findById(task.id))
+      // pubsub.publish('taskAdded', {taskAdded})
+      return taskAdded
     },
-    async updateTask(_, {id, input}, context) {
-      const userId = getUserId(context)
+    async updateTask(_, {id, input}, {request}) {
+      const userId = getUserId(request)
       return await populateTask(Task.findOneAndUpdate(
         { _id: id },
         { $set: input },
         { new: true }
       ))
     },
-    async deleteTask(_, {id}, context) {
-      const userId = getUserId(context)
+    async deleteTask(_, {id}, {request}) {
+      const userId = getUserId(request)
       await Task.deleteOne({_id: id})
       deleteSubTasks(id)
       return true
     },
-    async createFolder(_, {parent, name, shareWith}, context) {
+    async createFolder(_, {parent, name, shareWith}, {request}) {
       const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
       return await Folder.findById(folder.id).populate('shareWith.item')
     },
-    async createProject(_, {parent, name, shareWith, owners, startDate, finishDate}, context) {
+    async createProject(_, {parent, name, shareWith, owners, startDate, finishDate}, {request}) {
       const common = await folderCommon(context, parent, name, shareWith)
       const folder = await Project.create(Object.assign(common, {
         owners,
@@ -194,16 +197,16 @@ const resolvers = {
       }))
       return await Project.findById(folder.id).populate('shareWith.item')
     },
-    async updateFolder(_, {id, input}, context) {
-      const userId = getUserId(context)
+    async updateFolder(_, {id, input}, {request}) {
+      const userId = getUserId(request)
       return await Folder.findOneAndUpdate(
         { _id: id },
         { $set: input },
         { new: true }
       ).populate('shareWith')
     },
-    async deleteFolder(_, {id}, context) {
-      const userId = getUserId(context)
+    async deleteFolder(_, {id}, {request}) {
+      const userId = getUserId(request)
       await Folder.deleteOne({_id: id})
       return true
     },
@@ -224,8 +227,8 @@ const resolvers = {
 
       return user
     },
-    async invite (_, {emails, groups, role}, context) {
-      const userId = getUserId(context)
+    async invite (_, {emails, groups, role}, {request}) {
+      const userId = getUserId(request)
       const thisUser = await User.findById(userId)
       const team = thisUser.team
       const teamMembers = (await User.find({team}, 'email')).map(o => o.email)
@@ -296,7 +299,7 @@ const resolvers = {
       return {token, user}
     },
     // async deleteUser (_, {id, groups, notify}, context) {
-    //   const userId = getUserId(context)
+    //   const userId = getUserId(request)
     //   await User.deleteOne({_id: id})
     //   await Group.update(
     //     {_id: { $in: groups} },
@@ -305,8 +308,8 @@ const resolvers = {
     //   )
     //   return true
     // },
-    async createGroup (_, {name, initials, avatarColor, users}, context) {
-      const userId = getUserId(context)
+    async createGroup (_, {name, initials, avatarColor, users}, {request}) {
+      const userId = getUserId(request)
       const team = (await User.findById(userId)).team
       return await Group.create({
         name,
@@ -316,64 +319,76 @@ const resolvers = {
         users
       })
     },
-    async addUsersToGroup (_, {id, users}, context) {
-      const userId = getUserId(context)
+    async addUsersToGroup (_, {id, users}, {request}) {
+      const userId = getUserId(request)
       return await Group.findOneAndUpdate(
         { _id: id },
         { $push: { users: { $each: users } } },
         { new: true }
       )
     },
-    async removeUsersFromGroup (_, {id, users}, context) {
-      const userId = getUserId(context)
+    async removeUsersFromGroup (_, {id, users}, {request}) {
+      const userId = getUserId(request)
       return await Group.findOneAndUpdate(
         { _id: id },
         { $pullAll: { users } },
         { new: true }
       )
     },
-    async updateGroup (_, {id, name, initials, avatarColor}, context) {
-      const userId = getUserId(context)
+    async updateGroup (_, {id, name, initials, avatarColor}, {request}) {
+      const userId = getUserId(request)
       return await Group.findOneAndUpdate(
         { _id: id },
         { $set: { name, initials, avatarColor } },
         { new: true }
       )
     },
-    async deleteGroup (_, {id}, context) {
-      const userId = getUserId(context)
+    async deleteGroup (_, {id}, {request}) {
+      const userId = getUserId(request)
       await Group.deleteOne({_id: id})
       return true
     },
-    async updateUser(_, {id, input}, context) {
-      const userId = getUserId(context)
+    async updateUser(_, {id, input}, {request}) {
+      const userId = getUserId(request)
       return await User.findOneAndUpdate(
         { _id: id },
         { $set: input },
         { new: true }
       )
     },
-    async createRecord (_, {input}, context) {
-      const user = getUserId(context)
+    async createRecord (_, {input}, {request}) {
+      const user = getUserId(request)
       return await Record.create({
         ...input,
         user
       })
     },
-    async updateRecord (_, {id, input}, context) {
-      const userId = getUserId(context)
+    async updateRecord (_, {id, input}, {request}) {
+      const userId = getUserId(request)
       return await Record.findOneAndUpdate(
         { _id: id },
         { $set: input },
         { new: true }
       )
     },
-    async deleteRecord (_, {id}, context) {
-      const userId = getUserId(context)
+    async deleteRecord (_, {id}, {request}) {
+      const userId = getUserId(request)
       await Record.deleteOne({_id: id})
       return true      
     }
   },
+  // Subscription: {
+  //   taskAdded: {
+  //     subscribe: withFilter(
+  //       (parent, args, { pubsub }) => pubsub.asyncIterator('taskAdded'),
+  //       (payload, variables) => {
+  //         console.log(payload)
+  //         console.log(variables)
+  //         return true
+  //       }
+  //     )
+  //   }
+  // },
   Date: new GraphQLScalarType({
     name: 'Date',
     description: 'Date custom scalar type',
