@@ -22,4 +22,4 @@ scripts/
 .env.local
 .env.*.local
 
-now.json
+scripts

@@ -105,9 +105,9 @@ const resolvers = {
     },
     async getTasks (_, {parent, folder}, {request}) {
       if (parent) {
-        return await populateTask(Task.find({ parent })).sort({ createdAt: 1 })
+        return await populateTask(Task.find({ parent })).sort({ order: 1 })
       } else {
-        return await populateTask(Task.find({ folders: folder })).sort({ createdAt: -1 })
+        return await populateTask(Task.find({ folders: folder })).sort({ order: -1 })
       }
     },
     async getTask (_, {id}, {request}) {

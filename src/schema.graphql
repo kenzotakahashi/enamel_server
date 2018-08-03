@@ -96,6 +96,7 @@ type Task {
   duration: Int
   importance: String
   status: String
+  order: Float
   createdAt: Date
 }
 
@@ -166,6 +167,7 @@ input TaskInput {
   duration: Int
   importance: String
   status: String
+  order: Float
 }
 
 input FolderInput {

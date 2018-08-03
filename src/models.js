@@ -59,6 +59,10 @@ module.exports.Task = buildModel('Task', {
     type: String,
     default: 'New'
   },
+  order: {
+    type: Number,
+    default: moment().valueOf()
+  }
 })
 
 // TODO files
