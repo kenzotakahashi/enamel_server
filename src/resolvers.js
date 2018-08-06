@@ -25,7 +25,7 @@ const transporter = nodeMailer.createTransport({
     }
 })
 
-async function folderCommon(context, parent, name, shareWith) {
+async function folderCommon(request, parent, name, shareWith) {
   const userId = getUserId(request)
   return {
     name,
@@ -184,11 +184,11 @@ const resolvers = {
       return true
     },
     async createFolder(_, {parent, name, shareWith}, {request}) {
-      const folder = await Folder.create(await folderCommon(context, parent, name, shareWith))
+      const folder = await Folder.create(await folderCommon(request, parent, name, shareWith))
       return await Folder.findById(folder.id).populate('shareWith.item')
     },
     async createProject(_, {parent, name, shareWith, owners, startDate, finishDate}, {request}) {
-      const common = await folderCommon(context, parent, name, shareWith)
+      const common = await folderCommon(request, parent, name, shareWith)
       const folder = await Project.create(Object.assign(common, {
         owners,
         startDate,
