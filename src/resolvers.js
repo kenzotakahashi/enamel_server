@@ -163,7 +163,8 @@ const resolvers = {
         name,
         parent,
         folders: folder ? [folder] : [],
-        creator: userId
+        creator: userId,
+        order: moment().valueOf()
       })
       const taskAdded = await populateTask(Task.findById(task.id))
       // pubsub.publish('taskAdded', {taskAdded})
@@ -208,6 +209,11 @@ const resolvers = {
     async deleteFolder(_, {id}, {request}) {
       const userId = getUserId(request)
       await Folder.deleteOne({_id: id})
+      const tasks = await Task.find({ folders: id })
+      for (const task of tasks) {
+        await Task.deleteOne({_id: task.id})
+        deleteSubTasks(task.id)
+      }
       return true
     },
     async captureEmail (_, {email}) {

@@ -60,8 +60,7 @@ module.exports.Task = buildModel('Task', {
     default: 'New'
   },
   order: {
-    type: Number,
-    default: moment().valueOf()
+    type: Number
   }
 })
 
