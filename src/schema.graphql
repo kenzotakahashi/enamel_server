@@ -68,6 +68,7 @@ type Folder {
   parent: String
   description: String
   shareWith: [JSON]
+  createdAt: Date
 }
 
 type Project {
@@ -159,6 +160,7 @@ input UserInput {
 input TaskInput {
   name: String
   description: String
+  folders: [String]
   parent: String
   creator: String
   assignees: [String]
