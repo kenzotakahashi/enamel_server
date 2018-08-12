@@ -135,14 +135,15 @@ const resolvers = {
     async getLogs (_, args, {request}) {
       const userId = getUserId(request)
       const team = (await User.findById(userId)).team
-      return await Log.find({user: { $ne: userId }})
+      const teamMembers = await User.find({
+        team,
+        _id: { $ne: userId }
+      })
+
+      return await Log.find({user: {$in: teamMembers.map(o => o.id)}})
         .limit(30)
         .sort({ createdAt: -1 })
-        .populate({
-          path: 'user',
-          match: { team },
-          select: 'firstname lastname avatarColor',
-        })
+        .populate('user', 'firstname lastname avatarColor')
         .populate('target.item', 'name')
     },
     async getRecord (_, {id, task, date}, {request}) {
