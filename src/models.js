@@ -64,15 +64,30 @@ module.exports.Task = buildModel('Task', {
   }
 })
 
-// TODO files
-module.exports.Comment = buildModel('Comment', {
-  body: String,
+const Log = buildModel('Log', {
   user: { type: ObjectId, ref: 'User' },
-  parent: {
+  target: {
     kind: String,
-    item: { type: ObjectId, refPath: 'parent.kind' }
-  }
+    item: { type: ObjectId, refPath: 'target.kind' }
+  }  
 })
+module.exports.Log = Log
+
+module.exports.LogCreated = Log.discriminator('LogCreated', new Schema({
+}, {timestamps: true}))
+
+module.exports.LogStatus = Log.discriminator('LogStatus', new Schema({
+  status: String
+}, {timestamps: true}))
+
+module.exports.LogAssign = Log.discriminator('LogAssign', new Schema({
+  assignee: { type: ObjectId, ref: 'User' }
+}, {timestamps: true}))
+
+module.exports.Comment = Log.discriminator('Comment', new Schema({
+  body: String
+}, {timestamps: true}))
+
 
 module.exports.Reaction = buildModel('Reaction', {
   emoji: String,
@@ -119,5 +134,6 @@ module.exports.User = buildModel('User', {
   role: String,
   rate: Number,
   rateType: String,
-  status: String
+  status: String,
+  readNotificationsAt: Date
 })

@@ -11,8 +11,9 @@ type Query {
   getFolder(id: String!): Folder
   getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
-  getComments(parent: String): [Comment]
+  getComments(target: String): [Log]
   getRecord(id: String, task: String, date: String): Record
+  getLogs: [Log]
 }
 
 type Mutation {
@@ -31,7 +32,8 @@ type Mutation {
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, input: TaskInput): Task
   deleteTask(id: String!): Boolean
-  createComment(body: String, parent: ShareInput): Comment
+  createComment(body: String, target: ShareInput): Log
+  deleteComment(id: String!): Boolean
   
   createGroup(name: String, initials: String, avatarColor: String, users: [String]): Group
   addUsersToGroup(id: String!, users: [String]): Group
@@ -39,7 +41,7 @@ type Mutation {
   updateGroup(id: String!, name: String, initials: String, avatarColor: String): Group
   deleteGroup(id: String!): Boolean
 
-  updateUser(id: String! input: UserInput): User
+  updateUser(id: String, input: UserInput): User
 
   createRecord(input: RecordInput): Record
   updateRecord(id: String!, input: RecordInput): Record
@@ -59,6 +61,7 @@ type User {
   rate: Float
   rateType: String
   status: String
+  readNotificationsAt: Date
   createdAt: Date
 }
 
@@ -101,12 +104,11 @@ type Task {
   createdAt: Date
 }
 
-type Comment {
+type Log {
   id: String
   body: String
-  kind: String
   user: User
-  parent: JSON
+  target: JSON
   createdAt: Date
 }
 
@@ -155,6 +157,7 @@ input UserInput {
   rate: Float
   rateType: String
   status: String
+  readNotificationsAt: Date
 }
 
 input TaskInput {

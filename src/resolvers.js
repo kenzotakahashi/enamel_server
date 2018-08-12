@@ -9,7 +9,8 @@ const ObjectId = mongoose.Types.ObjectId
 // const sg = require('@sendgrid/mail')
 // sg.setApiKey(process.env.SENDGRID_API_KEY)
 
-const { User, Folder, Project, Team, Group, Record, Task, Comment } = require('./models')
+const { User, Folder, Project, Team, Group, Record, Task,
+  Log, LogCreated, LogStatus, LogAssign, Comment } = require('./models')
 const { getUserId } = require('./utils')
 const { welcomeEmail, invitationEmail, notificationNewUser } = require('./emails')
 
@@ -127,9 +128,22 @@ const resolvers = {
       const team = (await User.findById(userId)).team
       return await User.find({team})
     },
-    async getComments (_, {parent}, {request}) {
-      return await Comment.find({'parent.item': ObjectId(parent)})
-                          .populate('user', 'name initials avatarColor')
+    async getComments (_, {target}, {request}) {
+      return await Comment.find({'target.item': ObjectId(target)})
+                          .populate('user', 'firstname lastname avatarColor')
+    },
+    async getLogs (_, args, {request}) {
+      const userId = getUserId(request)
+      const team = (await User.findById(userId)).team
+      return await Log.find({user: { $ne: userId }})
+        .limit(30)
+        .sort({ createdAt: -1 })
+        .populate({
+          path: 'user',
+          match: { team },
+          select: 'firstname lastname avatarColor',
+        })
+        .populate('target.item', 'name')
     },
     async getRecord (_, {id, task, date}, {request}) {
       const user = getUserId(request)
@@ -148,14 +162,20 @@ const resolvers = {
     }
   },
   Mutation: {
-    async createComment(_, {body, parent}, {request}) {
+    async createComment(_, {body, target}, {request}) {
       const userId = getUserId(request)
       const comment = await Comment.create({
         body,
         user: userId,
-        parent,
+        target,
       })
-      return await Comment.findById(comment.id).populate('user', 'name initials avatarColor')
+      return await Comment.findById(comment.id)
+        .populate('user', 'firstname lastname avatarColor')
+    },
+    async deleteComment (_, {id}, {request}) {
+      const userId = getUserId(request)
+      await Comment.deleteOne({_id: id})
+      return true
     },
     async createTask(_, {folder, parent, name}, {request, pubsub}) {
       const userId = getUserId(request)
@@ -166,9 +186,14 @@ const resolvers = {
         creator: userId,
         order: moment().valueOf()
       })
-      const taskAdded = await populateTask(Task.findById(task.id))
-      // pubsub.publish('taskAdded', {taskAdded})
-      return taskAdded
+      LogCreated.create({
+        user: userId,
+        target: {
+          kind: 'Task',
+          item: task.id
+        }
+      })
+      return await populateTask(Task.findById(task.id))
     },
     async updateTask(_, {id, input}, {request}) {
       const userId = getUserId(request)
@@ -357,7 +382,7 @@ const resolvers = {
     async updateUser(_, {id, input}, {request}) {
       const userId = getUserId(request)
       return await User.findOneAndUpdate(
-        { _id: id },
+        { _id: id || userId },
         { $set: input },
         { new: true }
       )
