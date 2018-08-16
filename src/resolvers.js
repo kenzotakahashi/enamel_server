@@ -47,6 +47,19 @@ async function deleteSubTasks(id) {
   }
 }
 
+async function deleteSubfolders(id) {
+  const tasks = await Task.find({ folders: id })
+  for (const task of tasks) {
+    await Task.deleteOne({_id: task.id})
+    deleteSubTasks(task.id)
+  }
+  const folders = await Folder.find({parent: id})
+  for (const folder of folders) {
+   await deleteSubfolders(folder.id)
+   await Folder.deleteOne({_id: folder.id})
+  } 
+}
+
 function populateTask(promise) {
   return promise
     .populate('folders', 'name')
@@ -235,11 +248,7 @@ const resolvers = {
     async deleteFolder(_, {id}, {request}) {
       const userId = getUserId(request)
       await Folder.deleteOne({_id: id})
-      const tasks = await Task.find({ folders: id })
-      for (const task of tasks) {
-        await Task.deleteOne({_id: task.id})
-        deleteSubTasks(task.id)
-      }
+      deleteSubfolders(id)
       return true
     },
     async captureEmail (_, {email}) {
