@@ -31,10 +31,16 @@ async function folderCommon(request, parent, name, shareWith) {
   return {
     name,
     parent: parent || undefined,
-    shareWith: shareWith.concat(parent ? [] : [{
-      kind: 'Team',
-      item: (await User.findById(userId)).team
-    }])
+    shareWith: shareWith.concat(parent
+      ? []
+      : [{
+        kind: 'Team',
+        item: (await User.findById(userId)).team
+      }].concat(['External User', 'Collaborator']
+        .includes((await User.findById(userId)).role)
+        ? [{kind: 'User', item: userId}] : [])
+    ),
+    order: moment().valueOf()
   }
 }
 
@@ -78,6 +84,30 @@ const avatarColors = [
   "80DEEA","4DD0E1","00ACC1","9FA8DA","7986CB","3949AB","8E24AA","BA68C8","CE93D8"
 ]
 
+async function getTasks_(parent, folder) {
+  if (parent) {
+    return await populateTask(Task.find({ parent })).sort({ order: 1 })
+  } else {
+    return await populateTask(Task.find({ folders: folder })).sort({ order: -1 })
+  }
+}
+
+async function getFolders_(parent, userId) {
+  if (parent) {
+    return await Folder.find({parent}).sort({ order: 1 })
+  } else {
+    const user = await User.findById(userId)
+    const groups = await Group.find({users: ObjectId(userId)}, '_id')
+    const ids = groups.map(o => o._id).concat(
+      ['External User', 'Collaborator'].includes(user.role)
+      ? [ObjectId(userId)]
+      : [ObjectId(userId), user.team]
+    )
+    return await Folder.find({ 'shareWith.item': ids })
+      .populate('shareWith').sort({ order: 1 })
+  }
+}
+
 const resolvers = {
   Query: {
     async getTeam (_, args, {request, pubsub}) {
@@ -98,31 +128,15 @@ const resolvers = {
     },
     async getFolders (_, {parent}, {request}) {
       const userId = getUserId(request)
-      let folders
-      if (parent) {
-        folders = await Folder.find({parent})
-      } else {
-        const user = await User.findById(userId)
-        const groups = await Group.find({users: ObjectId(userId)}, '_id')
-        const ids = groups.map(o => o._id).concat(
-          ['External User', 'Collaborator'].includes(user.role)
-          ? [ObjectId(userId)]
-          : [ObjectId(userId), user.team]
-        )
-        folders = await Folder.find({ 'shareWith.item': ids }).populate('shareWith')
-      }
-      return folders
+      return getFolders_(parent, userId)
     },
     async getFolder (_, args, {request}) {
       const userId = getUserId(request)
       return await Folder.findById(args.id).populate('shareWith')
     },
     async getTasks (_, {parent, folder}, {request}) {
-      if (parent) {
-        return await populateTask(Task.find({ parent })).sort({ order: 1 })
-      } else {
-        return await populateTask(Task.find({ folders: folder })).sort({ order: -1 })
-      }
+      const userId = getUserId(request)
+      return getTasks_(parent, folder)
     },
     async getTask (_, {id}, {request}) {
       const userId = getUserId(request)
@@ -225,11 +239,7 @@ const resolvers = {
           { $set: {order: orders[i]} },
         )
       }
-      if (parent) {
-        return await populateTask(Task.find({ parent })).sort({ order: 1 })
-      } else {
-        return await populateTask(Task.find({ folders: folder })).sort({ order: -1 })
-      }
+      return getTasks_(parent, folder)
     },
     async deleteTask(_, {id}, {request}) {
       const userId = getUserId(request)
@@ -258,6 +268,16 @@ const resolvers = {
         { $set: input },
         { new: true }
       ).populate('shareWith')
+    },
+    async sortFolders(_, {folders, orders, parent}, {request}) {
+      const userId = getUserId(request)
+      for (const [i, id] of folders.entries()) {
+        await Folder.findOneAndUpdate(
+          { _id: id },
+          { $set: {order: orders[i]} },
+        )
+      }
+      return getFolders_(parent, userId)
     },
     async deleteFolder(_, {id}, {request}) {
       const userId = getUserId(request)
