@@ -31,7 +31,9 @@ type Mutation {
   
   createTask(folder: String, parent: String, name: String!): Task
   updateTask(id: String!, input: TaskInput): Task
+  sortTasks(tasks: [String], orders: [Float], folder: String, parent: String): [Task]
   deleteTask(id: String!): Boolean
+
   createComment(body: String, target: ShareInput): Log
   deleteComment(id: String!): Boolean
   

@@ -217,6 +217,20 @@ const resolvers = {
         { new: true }
       ))
     },
+    async sortTasks(_, {tasks, orders, parent, folder}, {request}) {
+      const userId = getUserId(request)
+      for (const [i, id] of tasks.entries()) {
+        await Task.findOneAndUpdate(
+          { _id: id },
+          { $set: {order: orders[i]} },
+        )
+      }
+      if (parent) {
+        return await populateTask(Task.find({ parent })).sort({ order: 1 })
+      } else {
+        return await populateTask(Task.find({ folders: folder })).sort({ order: -1 })
+      }
+    },
     async deleteTask(_, {id}, {request}) {
       const userId = getUserId(request)
       await Task.deleteOne({_id: id})
