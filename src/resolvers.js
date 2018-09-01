@@ -263,25 +263,26 @@ const resolvers = {
           item: task.id
         }
       })
-      const rootTask = await getRootTask(task)
-      const f = await Folder.findById(rootTask.folders[0])
-      const rootFolder = await getRootFolder(f)
-      if (rootFolder.slack) {
-        const user = await User.findById(userId)
-        const link = `${process.env.CLIENT_URL}/w/folder/${rootFolder.id}/list/${task.id}`
-        req.post(rootFolder.slack, {json: {"attachments": [{
-            "fallback": `${user.name} added new task - ${task.name} ${link}`,
-            "text": "Added new task",
-            "author_name": user.name,
-            "title": task.name,
-            "title_link": link
-          }]}},
-          function (error, response, body) {
-            if (!error && response.statusCode == 200) {
-              console.log(body)
+      if (!task.parent) {
+        const f = await Folder.findById(folder)
+        const rootFolder = await getRootFolder(f)
+        if (rootFolder.slack) {
+          const user = await User.findById(userId)
+          const link = `${process.env.CLIENT_URL}/w/folder/${rootFolder.id}/list/${task.id}`
+          req.post(rootFolder.slack, {json: {"attachments": [{
+              "fallback": `${user.name} added new task - ${task.name} ${link}`,
+              "text": "Added new task",
+              "author_name": user.name,
+              "title": task.name,
+              "title_link": link
+            }]}},
+            function (error, response, body) {
+              if (!error && response.statusCode == 200) {
+                console.log(body)
+              }
             }
-          }
-        )
+          )
+        }        
       }
 
       return await populateTask(Task.findById(task.id))
