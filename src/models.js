@@ -17,7 +17,8 @@ const Folder = buildModel('Folder', {
   parent: { type: ObjectId, ref: 'Folder' },
   order: {
     type: Number
-  }
+  },
+  slack: String
 })
 module.exports.Folder = Folder
 

@@ -2,6 +2,7 @@ const { GraphQLScalarType } = require('graphql')
 const { withFilter } = require('graphql-yoga')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const req = require('request')
 const moment = require('moment')
 const nodeMailer = require('nodemailer')
 const mongoose = require('mongoose')
@@ -108,6 +109,22 @@ async function getFolders_(parent, userId) {
   }
 }
 
+async function getRootFolder(folder) {
+  let f = folder
+  while (f.parent) {
+    f = await Folder.findById(f.parent)
+  }
+  return f
+}
+
+async function getRootTask(task) {
+  let t = task
+  while (t.parent) {
+    t = await Task.findById(t.parent)
+  }
+  return t
+}
+
 const resolvers = {
   Query: {
     async getTeam (_, args, {request, pubsub}) {
@@ -197,6 +214,31 @@ const resolvers = {
         user: userId,
         target,
       })
+
+      if (target.kind === 'Task') {
+        const task = await Task.findById(target.item)
+        const rootTask = await getRootTask(task)
+        const f = await Folder.findById(rootTask.folders[0])
+        const rootFolder = await getRootFolder(f)
+        if (rootFolder.slack) {
+          const user = await User.findById(userId)
+          const link = `${process.env.CLIENT_URL}/w/folder/${rootFolder.id}/list/${task.id}`
+          req.post(rootFolder.slack, {json: {"attachments": [{
+              "fallback": `${user.name} commented - ${body} ${link}`,
+              "text": body,
+              "author_name": user.name,
+              "title": task.name,
+              "title_link": link
+            }]}},
+            function (error, response, body) {
+              if (!error && response.statusCode == 200) {
+                console.log(body)
+              }
+            }
+          )
+        }        
+      }
+
       return await Comment.findById(comment.id)
         .populate('user', 'firstname lastname avatarColor')
     },
@@ -221,6 +263,27 @@ const resolvers = {
           item: task.id
         }
       })
+      const rootTask = await getRootTask(task)
+      const f = await Folder.findById(rootTask.folders[0])
+      const rootFolder = await getRootFolder(f)
+      if (rootFolder.slack) {
+        const user = await User.findById(userId)
+        const link = `${process.env.CLIENT_URL}/w/folder/${rootFolder.id}/list/${task.id}`
+        req.post(rootFolder.slack, {json: {"attachments": [{
+            "fallback": `${user.name} added new task - ${task.name} ${link}`,
+            "text": "Added new task",
+            "author_name": user.name,
+            "title": task.name,
+            "title_link": link
+          }]}},
+          function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+              console.log(body)
+            }
+          }
+        )
+      }
+
       return await populateTask(Task.findById(task.id))
     },
     async updateTask(_, {id, input}, {request}) {
