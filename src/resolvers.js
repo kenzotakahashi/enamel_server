@@ -93,6 +93,16 @@ async function getTasks_(parent, folder) {
   }
 }
 
+async function getSubfolders(id) {
+  const folders = await Folder.find({ parent: id })
+  let list = []
+  for (const folder of folders) {
+    list.push(folder.id)
+    list = list.concat(await getSubfolders(folder.id))
+  }
+  return list
+}
+
 async function getFolders_(parent, userId) {
   if (parent) {
     return await Folder.find({parent}).sort({ order: 1 })
@@ -162,6 +172,12 @@ const resolvers = {
         throw new Error('Task with that id does not exist')
       }
       return task
+    },
+    async getAllTasks (_, {folder}, {request}) {
+      const userId = getUserId(request)
+      const folders = await getSubfolders(folder)
+      folders.push(folder)
+      return await populateTask(Task.find({ folders: {$in: folders} }))
     },
     async getUser (_, {id}, {request}) {
       const userId = getUserId(request)

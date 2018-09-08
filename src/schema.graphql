@@ -11,6 +11,7 @@ type Query {
   getFolder(id: String!): Folder
   getTasks(folder: String, parent: String): [Task]
   getTask(id: String!): Task
+  getAllTasks(folder: String!): [Task]
   getComments(target: String): [Log]
   getRecord(id: String, task: String, date: String): Record
   getLogs: [Log]
