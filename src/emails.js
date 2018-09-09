@@ -1,6 +1,6 @@
 const url = process.env.CLIENT_URL
 // const fromEmail = 'noreply@enamel.tech'
-const fromEmail = 'kenzotakahashi2@gmail.com'
+const fromEmail = process.env.GMAIL_ACCOUNT
 
 module.exports.invitationEmail = function (email, user, thisUser) {
   const text = `

@@ -22,7 +22,7 @@ const transporter = nodeMailer.createTransport({
     port: 465,
     secure: true,
     auth: {
-      user: 'kenzotakahashi2@gmail.com',
+      user: process.env.GMAIL_ACCOUNT,
       pass: process.env.GMAIL_PASSWORD
     }
 })
