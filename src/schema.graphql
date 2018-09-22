@@ -111,6 +111,7 @@ type Task {
 type Log {
   id: String
   body: String
+  status: String
   user: User
   target: JSON
   createdAt: Date
