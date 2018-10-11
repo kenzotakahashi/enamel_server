@@ -67,6 +67,7 @@ type User {
   status: String
   readNotificationsAt: Date
   createdAt: Date
+  appearance: String
 }
 
 type Folder {
@@ -163,6 +164,7 @@ input UserInput {
   rateType: String
   status: String
   readNotificationsAt: Date
+  appearance: String
 }
 
 input TaskInput {

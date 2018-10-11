@@ -139,5 +139,9 @@ module.exports.User = buildModel('User', {
   rate: Number,
   rateType: String,
   status: String,
-  readNotificationsAt: Date
+  readNotificationsAt: Date,
+  appearance: {
+    type: String,
+    default: 'Classic'
+  }
 })
