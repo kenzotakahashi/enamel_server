@@ -237,8 +237,18 @@ const resolvers = {
             $gte: moment(date).startOf('day'),
             $lte: moment(date).endOf('day')
           }
-        })
+        }).populate('task')
       }
+    },
+    async getRecords (_, {id, date}, {request}) {
+      const userId = getUserId(request)
+      return await Record.find({
+        user: id,
+        date: {
+          $gte: moment(date).startOf('month'),
+          $lte: moment(date).endOf('month')
+        }
+      }).sort({ date: 1 }).populate('task')
     }
   },
   Mutation: {

@@ -14,6 +14,7 @@ type Query {
   getAllTasks(folder: String!): [Task]
   getComments(target: String): [Log]
   getRecord(id: String, task: String, date: String): Record
+  getRecords(id: String, date: String): [Record]
   getLogs: [Log]
 }
 
@@ -135,7 +136,7 @@ type Group {
 type Record {
   id: String
   user: String
-  task: String
+  task: Task
   date: Date
   timeSpent: String
   comment: String
